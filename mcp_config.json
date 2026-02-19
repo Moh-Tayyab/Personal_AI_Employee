@@ -1,0 +1,63 @@
+# Claude Code MCP Configuration - Gold Tier
+
+# Copy this to ~/.config/claude-code/mcp.json
+
+{
+  "servers": [
+    {
+      "name": "email",
+      "command": "python",
+      "args": ["mcp/email/server.py"],
+      "env": {
+        "VAULT_PATH": "/path/to/Personal_AI_Employee/vault",
+        "DRY_RUN": "true"
+      }
+    },
+    {
+      "name": "filesystem",
+      "command": "python",
+      "args": ["mcp/filesystem/server.py"],
+      "env": {
+        "VAULT_PATH": "/path/to/Personal_AI_Employee/vault"
+      }
+    },
+    {
+      "name": "odoo",
+      "command": "python",
+      "args": ["mcp/odoo/server.py"],
+      "env": {
+        "ODOO_URL": "http://localhost:8069",
+        "ODOO_DB": "odoo",
+        "ODOO_USERNAME": "admin",
+        "ODOO_API_KEY": "your_api_key"
+      }
+    },
+    {
+      "name": "linkedin",
+      "command": "python",
+      "args": ["mcp/linkedin/server.py"],
+      "env": {
+        "VAULT_PATH": "/path/to/Personal_AI_Employee/vault",
+        "DRY_RUN": "true"
+      }
+    },
+    {
+      "name": "twitter",
+      "command": "python",
+      "args": ["mcp/twitter/server.py"],
+      "env": {
+        "VAULT_PATH": "/path/to/Personal_AI_Employee/vault",
+        "DRY_RUN": "true"
+      }
+    },
+    {
+      "name": "social",
+      "command": "python",
+      "args": ["mcp/social/server.py"],
+      "env": {
+        "VAULT_PATH": "/path/to/Personal_AI_Employee/vault",
+        "DRY_RUN": "true"
+      }
+    }
+  ]
+}

@@ -1,0 +1,51 @@
+"""
+Cloud Deployment Setup for Personal AI Employee
+
+This directory contains cloud deployment configurations for 24/7 operation.
+
+## Architecture
+
+### Cloud Agent (Runs on VM)
+- Email monitoring and triage
+- Social media drafts
+- Scheduling
+- Reads from cloud vault
+- Creates approval requests
+
+### Local Agent (Runs on your machine)
+- WhatsApp session
+- Payment/banking actions
+- Final send/post approvals
+- Sensitive operations
+- Reads from local vault
+
+## Files
+
+- cloud_setup.sh - Deploy to cloud VM
+- health_monitor.sh - Health checking
+- deploy_odoo.sh - Odoo deployment
+
+## Usage
+
+1. Set up Oracle Cloud Free Tier VM
+2. Clone repo to VM
+3. Run cloud_setup.sh
+4. Configure Git sync between cloud and local
+"""
+
+# Cloud deployment configuration
+CLOUD_VM_HOST="your-vm-ip"
+CLOUD_VM_USER="ubuntu"
+CLOUD_VM_PATH="/home/ubuntu/personal-ai-employee"
+
+# Local configuration
+LOCAL_VAULT_PATH="./vault"
+GIT_REPO="your-repo-url"
+
+# Health check settings
+HEALTH_CHECK_INTERVAL=60
+MAX_RESTART_ATTEMPTS=3
+
+# Work-zone specialization
+CLOUD_DOMAINS=["email", "calendar", "social"]
+LOCAL_DOMAINS=["whatsapp", "payments", "banking", "approvals"]

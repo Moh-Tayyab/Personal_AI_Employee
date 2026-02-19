@@ -1,23 +1,117 @@
-# Hands-on Skills
+# Personal AI Employee
 
-A collection of hands-on skills for students to explore and practice when learning the Skills concept in Claude Code. These examples accompany **Lesson 04 of Chapter 5** in the AI Native Development book.
+A local-first, autonomous AI agent that manages personal and business affairs using Claude Code, Obsidian, and MCP servers.
 
-**Reading Material:** [Claude Code Features and Workflows](https://ai-native.panaversity.org/docs/AI-Tool-Landscape/claude-code-features-and-workflows)
+## What is a Digital FTE?
 
-## Skills
+A Digital FTE (Full-Time Equivalent) is an AI employee that works 24/7 to manage your life and business. Unlike traditional software, it proactively:
 
-| Skill | Purpose |
-|-------|---------|
-| **browsing-with-playwright** | Browser automation using Playwright MCP. Navigate websites, fill forms, click elements, take screenshots, and extract data. Use when tasks require web browsing, form submission, web scraping, UI testing, or any browser interaction |
-| **fetch-library-docs** | Token-efficient library documentation fetcher for various programming languages, providing code examples, API references, and best practices. |
-| **doc-coauthoring** | Guide users through a structured workflow for co-authoring documentation including proposals, technical specs, decision docs, and similar structured content |
-| **docx** | Comprehensive Word document creation, editing, and analysis with support for tracked changes, comments, formatting preservation, and text extraction |
-| **internal-comms** | Resources to help write internal communications including 3P updates, company newsletters, FAQs, status reports, leadership updates, and incident reports |
-| **pdf** | PDF manipulation toolkit for extracting text and tables, creating new PDFs, merging/splitting documents, and handling forms |
-| **pptx** | PowerPoint presentation creation, editing, and analysis including layouts, speaker notes, comments, and visual design |
-| **interview** | Conducts discovery conversations to understand user intent and agree on approach before taking action. Prevents building the wrong thing by uncovering WHY behind WHAT through structured questioning |
-| **skill-creator** | Guide for creating effective skills that extend Claude's capabilities with specialized knowledge, workflows, or tool integrations |
-| **skill-creator-pro** | Creates production-grade, reusable skills with embedded domain expertise. Guides creation of new skills, improves existing ones, and provides patterns for 5 skill types (Builder, Guide, Automation, Analyzer, Validator) |
-| **skill-validator** | Validate any skill against production-level quality criteria. 7 weighted criteria, 0-100 scoring, actionable feedback with prioritized recommendations |
-| **theme-factory** | Toolkit for styling artifacts (slides, docs, reports, HTML) with 10 pre-set professional themes or custom on-the-fly theme generation |
-| **xlsx** | Comprehensive spreadsheet creation, editing, and analysis with support for formulas, formatting, data analysis, and visualization |
+- Monitors email, WhatsApp, and files for important items
+- Analyzes and plans responses
+- Executes actions through MCP servers
+- Asks for approval on sensitive operations
+- Generates weekly business briefings
+
+## Quick Start
+
+### Prerequisites
+
+```bash
+# Install Python 3.13+
+python --version
+
+# Install Claude Code
+npm install -g @anthropic/claude-code
+```
+
+### Setup
+
+```bash
+# Clone and enter project
+cd personal-ai-employee
+
+# Copy environment template
+cp .env.example .env
+
+# Install dependencies
+pip install -e .
+
+# Open vault in Obsidian
+obsidian ./vault
+```
+
+### Run
+
+```bash
+# Start file watcher
+python watchers/filesystem_watcher.py --vault ./vault --watch-path ./drop
+
+# Start orchestrator (in another terminal)
+python orchestrator.py --vault ./vault --dry-run
+```
+
+## Project Structure
+
+```
+personal-ai-employee/
+├── vault/                    # Obsidian vault (brain)
+│   ├── Dashboard.md
+│   ├── Company_Handbook.md
+│   ├── Business_Goals.md
+│   ├── Needs_Action/
+│   ├── Plans/
+│   ├── Done/
+│   ├── Pending_Approval/
+│   ├── Approved/
+│   └── Logs/
+├── watchers/               # Sentinel scripts
+│   ├── base_watcher.py
+│   ├── gmail_watcher.py
+│   ├── filesystem_watcher.py
+│   └── whatsapp_watcher.py
+├── mcp/                    # MCP servers
+│   ├── email/
+│   ├── filesystem/
+│   ├── odoo/
+│   ├── linkedin/
+│   ├── twitter/
+│   └── social/
+├── scripts/                # Utility scripts
+│   ├── generate_briefing.py
+│   ├── vault_sync.py
+│   └── agent_coordinator.py
+├── cloud/                  # Cloud deployment
+│   ├── cloud_setup.sh
+│   ├── health_monitor.sh
+│   └── deploy_odoo.sh
+└── orchestrator.py         # Main coordinator
+```
+
+## How It Works
+
+1. **Watchers** monitor external sources (email, files, WhatsApp)
+2. New items create action files in `Needs_Action/`
+3. **Orchestrator** triggers Claude Code to process items
+4. Claude creates **Plan.md** files with action steps
+5. For sensitive actions, Claude creates approval requests
+6. User reviews and moves files to `Approved/`
+7. **MCP servers** execute the approved actions
+
+## Tiers
+
+| Tier | Features |
+|------|----------|
+| Bronze | Vault, one watcher, Claude integration |
+| Silver | Multiple watchers, MCP servers, approval workflow |
+| Gold | Odoo accounting, social media, CEO briefings |
+| Platinum | Cloud deployment, 24/7 operation, vault sync |
+
+## Documentation
+
+- [AGENTS.md](AGENTS.md) - Technical specification
+- [vault/Company_Handbook.md](vault/Company_Handbook.md) - AI behavior rules
+- [vault/Business_Goals.md](vault/Business_Goals.md) - Objectives
+
+## License
+
+MIT
