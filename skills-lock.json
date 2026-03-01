@@ -1,0 +1,368 @@
+{
+  "$schema": "https://skills.sh/schemas/skills-lock.json",
+  "version": "1.0.0",
+  "lockfileVersion": 1,
+  "generated": "2026-03-01T22:45:00Z",
+  "project": {
+    "name": "personal-ai-employee",
+    "description": "Digital FTE - Autonomous AI Employee with Claude Code, Obsidian, and MCP",
+    "version": "1.0.0",
+    "tier": "Gold"
+  },
+  "skills": {
+    "process-email": {
+      "path": "skills/process-email",
+      "version": "1.0.0",
+      "name": "process-email",
+      "description": "Analyzes incoming emails, determines priority and category, drafts responses, creates actionable plans",
+      "category": "reasoning",
+      "triggers": [
+        "new email in Needs_Action/",
+        "/process-email",
+        "orchestrator trigger"
+      ],
+      "allowedTools": ["Read", "Write", "Glob", "Grep", "Edit"],
+      "model": "sonnet",
+      "dependencies": [],
+      "references": [
+        "references/email-categories.md",
+        "references/response-templates.md",
+        "references/priority-rules.md",
+        "references/autonomy-matrix.md"
+      ],
+      "integrity": {
+        "algorithm": "sha256",
+        "hash": "generated-on-install"
+      },
+      "installed": "2026-03-01T22:45:00Z"
+    },
+    "create-plan": {
+      "path": "skills/create-plan",
+      "version": "1.0.0",
+      "name": "create-plan",
+      "description": "Creates structured execution plans from action items in Needs_Action folder",
+      "category": "reasoning",
+      "triggers": [
+        "new items in Needs_Action/",
+        "/create-plan",
+        "after email/message processing"
+      ],
+      "allowedTools": ["Read", "Write", "Glob", "Grep", "Edit"],
+      "model": "sonnet",
+      "dependencies": [],
+      "references": [],
+      "integrity": {
+        "algorithm": "sha256",
+        "hash": "generated-on-install"
+      },
+      "installed": "2026-03-01T22:45:00Z"
+    },
+    "execute-action": {
+      "path": "skills/execute-action",
+      "version": "1.0.0",
+      "name": "execute-action",
+      "description": "Executes approved actions through MCP servers with audit logging",
+      "category": "action",
+      "triggers": [
+        "items moved to Approved/",
+        "/execute-action",
+        "orchestrator trigger"
+      ],
+      "allowedTools": ["Read", "Write", "Glob", "Grep", "Bash"],
+      "model": "sonnet",
+      "dependencies": ["mcp-email", "mcp-browser", "mcp-social"],
+      "references": [],
+      "integrity": {
+        "algorithm": "sha256",
+        "hash": "generated-on-install"
+      },
+      "installed": "2026-03-01T22:45:00Z"
+    },
+    "request-approval": {
+      "path": "skills/request-approval",
+      "version": "1.0.0",
+      "name": "request-approval",
+      "description": "Creates approval requests for sensitive actions requiring human approval",
+      "category": "utility",
+      "triggers": [
+        "Level 3 autonomy actions",
+        "/request-approval",
+        "exceeds approval thresholds"
+      ],
+      "allowedTools": ["Read", "Write", "Glob", "Grep", "Edit"],
+      "model": "sonnet",
+      "dependencies": [],
+      "references": [],
+      "integrity": {
+        "algorithm": "sha256",
+        "hash": "generated-on-install"
+      },
+      "installed": "2026-03-01T22:45:00Z"
+    },
+    "generate-briefing": {
+      "path": "skills/generate-briefing",
+      "version": "1.0.0",
+      "name": "generate-briefing",
+      "description": "Generates CEO briefing reports with business intelligence and recommendations",
+      "category": "intelligence",
+      "triggers": [
+        "weekly schedule",
+        "/generate-briefing",
+        "on-demand request"
+      ],
+      "allowedTools": ["Read", "Write", "Glob", "Grep"],
+      "model": "sonnet",
+      "dependencies": [],
+      "references": [],
+      "integrity": {
+        "algorithm": "sha256",
+        "hash": "generated-on-install"
+      },
+      "installed": "2026-03-01T22:45:00Z"
+    },
+    "audit-subscriptions": {
+      "path": "skills/audit-subscriptions",
+      "version": "1.0.0",
+      "name": "audit-subscriptions",
+      "description": "Analyzes subscriptions and recurring expenses to identify optimization opportunities",
+      "category": "intelligence",
+      "triggers": [
+        "monthly schedule",
+        "/audit-subscriptions",
+        "cost optimization request"
+      ],
+      "allowedTools": ["Read", "Write", "Glob", "Grep"],
+      "model": "sonnet",
+      "dependencies": [],
+      "references": [],
+      "integrity": {
+        "algorithm": "sha256",
+        "hash": "generated-on-install"
+      },
+      "installed": "2026-03-01T22:45:00Z"
+    },
+    "process-whatsapp": {
+      "path": "skills/process-whatsapp",
+      "version": "1.0.0",
+      "name": "process-whatsapp",
+      "description": "Processes WhatsApp messages with urgency detection and quick response drafting",
+      "category": "reasoning",
+      "triggers": [
+        "new WhatsApp messages in Needs_Action/",
+        "/process-whatsapp",
+        "orchestrator trigger"
+      ],
+      "allowedTools": ["Read", "Write", "Glob", "Grep", "Edit"],
+      "model": "sonnet",
+      "dependencies": [],
+      "references": [],
+      "integrity": {
+        "algorithm": "sha256",
+        "hash": "generated-on-install"
+      },
+      "installed": "2026-03-01T22:45:00Z"
+    },
+    "watch-gmail": {
+      "path": "skills/perception/watch-gmail",
+      "version": "1.0.0",
+      "name": "watch-gmail",
+      "description": "Monitors Gmail inbox for new messages and creates action items",
+      "category": "perception",
+      "triggers": [
+        "cron schedule",
+        "continuous monitoring",
+        "/watch-gmail"
+      ],
+      "allowedTools": ["Read", "Write", "Glob", "Bash"],
+      "model": "sonnet",
+      "dependencies": ["mcp-email"],
+      "references": [],
+      "integrity": {
+        "algorithm": "sha256",
+        "hash": "generated-on-install"
+      },
+      "installed": "2026-03-01T22:45:00Z"
+    },
+    "orchestrator": {
+      "path": "skills/orchestration/orchestrator",
+      "version": "1.0.0",
+      "name": "orchestrator",
+      "description": "Master coordination process that triggers skills and manages workflow",
+      "category": "orchestration",
+      "triggers": [
+        "scheduled execution",
+        "/orchestrator",
+        "system startup"
+      ],
+      "allowedTools": ["Read", "Write", "Glob", "Grep", "Bash"],
+      "model": "sonnet",
+      "dependencies": ["process-email", "create-plan", "execute-action", "request-approval"],
+      "references": [],
+      "integrity": {
+        "algorithm": "sha256",
+        "hash": "generated-on-install"
+      },
+      "installed": "2026-03-01T22:45:00Z"
+    },
+    "ralph-loop": {
+      "path": "skills/orchestration/ralph-loop",
+      "version": "1.0.0",
+      "name": "ralph-loop",
+      "description": "Persistent task completion loop that ensures work is finished",
+      "category": "orchestration",
+      "triggers": [
+        "task initiation",
+        "/ralph-loop",
+        "incomplete work detected"
+      ],
+      "allowedTools": ["Read", "Write", "Glob", "Grep", "Bash"],
+      "model": "sonnet",
+      "dependencies": [],
+      "references": [],
+      "integrity": {
+        "algorithm": "sha256",
+        "hash": "generated-on-install"
+      },
+      "installed": "2026-03-01T22:45:00Z"
+    },
+    "mcp-email": {
+      "path": "skills/action/mcp-email",
+      "version": "1.0.0",
+      "name": "mcp-email",
+      "description": "Email MCP handler for sending and managing emails",
+      "category": "action",
+      "triggers": [
+        "execute-action dependency",
+        "/mcp-email"
+      ],
+      "allowedTools": ["Read", "Write", "Bash"],
+      "model": "sonnet",
+      "dependencies": [],
+      "references": [],
+      "mcpServer": "email",
+      "integrity": {
+        "algorithm": "sha256",
+        "hash": "generated-on-install"
+      },
+      "installed": "2026-03-01T22:45:00Z"
+    },
+    "mcp-browser": {
+      "path": "skills/action/mcp-browser",
+      "version": "1.0.0",
+      "name": "mcp-browser",
+      "description": "Browser MCP handler for web automation and payments",
+      "category": "action",
+      "triggers": [
+        "execute-action dependency",
+        "/mcp-browser"
+      ],
+      "allowedTools": ["Read", "Write", "Bash"],
+      "model": "sonnet",
+      "dependencies": [],
+      "references": [],
+      "mcpServer": "browser",
+      "integrity": {
+        "algorithm": "sha256",
+        "hash": "generated-on-install"
+      },
+      "installed": "2026-03-01T22:45:00Z"
+    },
+    "mcp-social": {
+      "path": "skills/action/mcp-social",
+      "version": "1.0.0",
+      "name": "mcp-social",
+      "description": "Social media MCP handler for LinkedIn and Twitter posting",
+      "category": "action",
+      "triggers": [
+        "execute-action dependency",
+        "/mcp-social"
+      ],
+      "allowedTools": ["Read", "Write", "Bash"],
+      "model": "sonnet",
+      "dependencies": [],
+      "references": [
+        "references/linkedin-api.md",
+        "references/twitter-api.md",
+        "references/content-guidelines.md",
+        "references/error-codes.md",
+        "references/scheduling.md"
+      ],
+      "mcpServer": "linkedin",
+      "integrity": {
+        "algorithm": "sha256",
+        "hash": "generated-on-install"
+      },
+      "installed": "2026-03-01T22:45:00Z"
+    },
+    "ceo-briefing": {
+      "path": "skills/intelligence/ceo-briefing",
+      "version": "1.0.0",
+      "name": "ceo-briefing",
+      "description": "Generates comprehensive CEO briefing reports",
+      "category": "intelligence",
+      "triggers": [
+        "weekly schedule",
+        "/ceo-briefing"
+      ],
+      "allowedTools": ["Read", "Write", "Glob", "Grep"],
+      "model": "sonnet",
+      "dependencies": [],
+      "references": [],
+      "integrity": {
+        "algorithm": "sha256",
+        "hash": "generated-on-install"
+      },
+      "installed": "2026-03-01T22:45:00Z"
+    }
+  },
+  "categories": {
+    "perception": ["watch-gmail"],
+    "reasoning": ["process-email", "create-plan", "process-whatsapp"],
+    "action": ["execute-action", "mcp-email", "mcp-browser", "mcp-social"],
+    "orchestration": ["orchestrator", "ralph-loop"],
+    "intelligence": ["generate-briefing", "audit-subscriptions", "ceo-briefing"],
+    "utility": ["request-approval"]
+  },
+  "tiers": {
+    "bronze": ["watch-gmail", "process-email", "create-plan", "request-approval"],
+    "silver": ["process-whatsapp", "execute-action", "orchestrator", "ralph-loop"],
+    "gold": ["generate-briefing", "audit-subscriptions", "mcp-social"],
+    "platinum": []
+  },
+  "mcpDependencies": {
+    "email": {
+      "config": "mcp_config.json",
+      "skills": ["mcp-email", "process-email", "execute-action"]
+    },
+    "linkedin": {
+      "config": "mcp_config.json",
+      "skills": ["mcp-social", "execute-action"]
+    },
+    "twitter": {
+      "config": "mcp_config.json",
+      "skills": ["mcp-social", "execute-action"]
+    },
+    "filesystem": {
+      "config": "mcp_config.json",
+      "skills": ["all"]
+    }
+  },
+  "vaultDependencies": {
+    "folders": [
+      "Needs_Action",
+      "Plans",
+      "Pending_Approval",
+      "Approved",
+      "Rejected",
+      "Done",
+      "Drafts",
+      "Logs",
+      "Briefings"
+    ],
+    "files": [
+      "Company_Handbook.md",
+      "Business_Goals.md",
+      "Dashboard.md"
+    ]
+  }
+}

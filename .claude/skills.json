@@ -1,0 +1,125 @@
+{
+  "$schema": "https://claude.ai/schemas/skills.json",
+  "version": "1.0.0",
+  "project": "personal-ai-employee",
+  "description": "Digital FTE - Autonomous AI Employee",
+  "skills": [
+    {
+      "name": "process-email",
+      "path": "skills/process-email/SKILL.md",
+      "description": "Process incoming emails from Needs_Action folder",
+      "triggers": ["process email", "check email", "email processing"],
+      "enabled": true
+    },
+    {
+      "name": "process-whatsapp",
+      "path": "skills/process-whatsapp/SKILL.md",
+      "description": "Process WhatsApp messages from Needs_Action folder",
+      "triggers": ["process whatsapp", "check whatsapp", "whatsapp message"],
+      "enabled": true
+    },
+    {
+      "name": "create-plan",
+      "path": "skills/create-plan/SKILL.md",
+      "description": "Create execution plans from action items",
+      "triggers": ["create plan", "make a plan", "plan this"],
+      "enabled": true
+    },
+    {
+      "name": "execute-action",
+      "path": "skills/execute-action/SKILL.md",
+      "description": "Execute approved actions through MCP servers",
+      "triggers": ["execute action", "run action", "execute"],
+      "enabled": true
+    },
+    {
+      "name": "request-approval",
+      "path": "skills/request-approval/SKILL.md",
+      "description": "Create approval requests for sensitive actions",
+      "triggers": ["request approval", "need approval", "approve this"],
+      "enabled": true
+    },
+    {
+      "name": "generate-briefing",
+      "path": "skills/generate-briefing/SKILL.md",
+      "description": "Generate CEO briefing reports",
+      "triggers": ["generate briefing", "ceo briefing", "weekly summary", "briefing"],
+      "enabled": true
+    },
+    {
+      "name": "audit-subscriptions",
+      "path": "skills/audit-subscriptions/SKILL.md",
+      "description": "Audit subscriptions and recurring expenses",
+      "triggers": ["audit subscriptions", "check subscriptions", "subscription audit"],
+      "enabled": true
+    },
+    {
+      "name": "orchestrator",
+      "path": "skills/orchestration/orchestrator/SKILL.md",
+      "description": "Master coordination process for workflow management",
+      "triggers": ["orchestrator", "run orchestrator", "coordinate"],
+      "enabled": true
+    },
+    {
+      "name": "ralph-loop",
+      "path": "skills/orchestration/ralph-loop/SKILL.md",
+      "description": "Persistent task completion loop",
+      "triggers": ["ralph loop", "complete tasks", "finish work"],
+      "enabled": true
+    },
+    {
+      "name": "watch-gmail",
+      "path": "skills/perception/watch-gmail/SKILL.md",
+      "description": "Monitor Gmail for new messages",
+      "triggers": ["watch gmail", "check gmail", "gmail watcher"],
+      "enabled": true
+    },
+    {
+      "name": "mcp-email",
+      "path": "skills/action/mcp-email/SKILL.md",
+      "description": "Email MCP handler for email operations",
+      "triggers": ["mcp email", "send email"],
+      "enabled": true
+    },
+    {
+      "name": "mcp-browser",
+      "path": "skills/action/mcp-browser/SKILL.md",
+      "description": "Browser MCP handler for web automation",
+      "triggers": ["mcp browser", "browse web", "browser automation"],
+      "enabled": true
+    },
+    {
+      "name": "mcp-social",
+      "path": "skills/action/mcp-social/SKILL.md",
+      "description": "Social media MCP handler for posting",
+      "triggers": ["mcp social", "post social", "linkedin post", "twitter post"],
+      "enabled": true
+    },
+    {
+      "name": "ceo-briefing",
+      "path": "skills/intelligence/ceo-briefing/SKILL.md",
+      "description": "Generate comprehensive CEO briefing",
+      "triggers": ["ceo briefing", "executive briefing"],
+      "enabled": true
+    }
+  ],
+  "aliases": {
+    "email": "process-email",
+    "whatsapp": "process-whatsapp",
+    "plan": "create-plan",
+    "execute": "execute-action",
+    "approve": "request-approval",
+    "briefing": "generate-briefing",
+    "audit": "audit-subscriptions",
+    "subscriptions": "audit-subscriptions"
+  },
+  "hooks": {
+    "preInvoke": [],
+    "postInvoke": []
+  },
+  "settings": {
+    "autoRegister": true,
+    "validateOnLoad": true,
+    "logInvocations": true
+  }
+}
