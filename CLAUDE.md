@@ -10,11 +10,16 @@ A local-first, autonomous AI agent that:
 - Stores everything in an Obsidian Markdown vault
 - Executes actions through MCP (Model Context Protocol) servers
 - Requires human approval for sensitive operations
+- **NEW**: Exposes HTTP endpoints for external integrations and webhooks
 
 ## Architecture
 
 ```
 External Sources → Watchers → Obsidian Vault → Claude Code → MCP → Actions
+                      ↓
+               HTTP Hooks (NEW)
+                      ↓
+         External Webhooks / Dashboard / API
 ```
 
 ## Key Files
@@ -22,6 +27,8 @@ External Sources → Watchers → Obsidian Vault → Claude Code → MCP → Act
 - `orchestrator.py` - Main coordinator that triggers Claude and processes items
 - `watchers/` - Python scripts that monitor Gmail, files, WhatsApp
 - `mcp/` - MCP servers for email, social media, Odoo accounting
+- `hooks/` - HTTP webhook server for external integrations (NEW)
+- `skills/` - Claude Code agent skills for specialized tasks
 - `vault/` - Obsidian vault with all data and rules
 
 ## Vault Structure
@@ -43,6 +50,12 @@ vault/
 ## Commands
 
 ```bash
+# Start all services (recommended)
+./scripts/start_all.sh
+
+# Start HTTP hook server only
+./scripts/start_hooks.sh --port 8080 --vault ./vault
+
 # File watcher
 python watchers/filesystem_watcher.py --vault ./vault --watch-path ./drop
 
@@ -54,6 +67,38 @@ python scripts/generate_briefing.py --vault ./vault
 
 # Vault sync (Platinum)
 python scripts/vault_sync.py --vault ./vault --mode pull
+
+# Stop all services
+./scripts/stop_all.sh
+```
+
+## HTTP Endpoints (NEW)
+
+The hook server provides REST endpoints for external integration:
+
+| Endpoint | Method | Purpose |
+|----------|--------|---------|
+| `/health` | GET | Health check |
+| `/status` | GET | System status (items, counts) |
+| `/pending` | GET | List pending approvals |
+| `/dashboard` | GET | Dashboard data for web UI |
+| `/webhook/email` | POST | Receive email webhooks |
+| `/webhook/approval` | POST | Approval callbacks |
+| `/webhook/github` | POST | GitHub webhook integration |
+| `/trigger/process` | POST | Trigger processing manually |
+
+Example usage:
+```bash
+# Get system status
+curl http://localhost:8080/status
+
+# Approve via webhook
+curl -X POST http://localhost:8080/webhook/approval \
+  -H "Content-Type: application/json" \
+  -d '{"action": "approve", "item_id": "EMAIL_001"}'
+
+# Trigger processing
+curl -X POST http://localhost:8080/trigger/process
 ```
 
 ## Tiers Implemented
@@ -68,3 +113,38 @@ python scripts/vault_sync.py --vault ./vault --mode pull
 - **Human-in-the-Loop**: Sensitive actions require moving files to Approved/
 - **Claim-by-Move**: First agent to claim an item owns it
 - **Ralph Wiggum Loop**: Claude keeps working until task is complete
+- **Parallel Processing**: Use Agent tool for concurrent task execution (NEW)
+- **Interactive Approval**: AskUserQuestion with markdown preview for decisions (NEW)
+
+## Agent Skills (NEW)
+
+Available skills in `.claude/commands/` and `skills/`:
+
+| Skill | Purpose |
+|-------|---------|
+| `/process-emails` | Process emails from Needs_Action |
+| `/process-whatsapp` | Process WhatsApp messages |
+| `/create-plan` | Generate Plan.md for items |
+| `/request-approval` | Create approval requests |
+| `/execute-action` | Execute approved actions |
+| `/generate-briefing` | Create CEO briefing |
+| `/interactive-approval` | Real-time approval with preview (NEW) |
+| `/parallel-process` | Concurrent processing (NEW) |
+
+## Webhook Configuration
+
+Configure external webhooks in `vault/secrets/webhooks.json`:
+
+```json
+{
+  "webhooks": {
+    "slack": "https://hooks.slack.com/services/YOUR/SLACK/WEBHOOK",
+    "discord": "https://discord.com/api/webhooks/YOUR/WEBHOOK"
+  }
+}
+```
+
+Webhooks are triggered for:
+- New approval requests
+- Approval/rejection results
+- Error notifications
