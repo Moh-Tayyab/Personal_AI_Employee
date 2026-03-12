@@ -1,0 +1,210 @@
+# Multi-Provider AI Configuration - Optimized for Gemini + OpenRouter + OpenAI
+# Cost-effective setup without Anthropic
+
+providers:
+  gemini:
+    api_key_env: "GEMINI_API_KEY"
+    model: "gemini-2.5-flash"
+    max_tokens: 4096
+    priority: 1
+    supports_tools: true
+    supports_thinking: false
+    supports_mcp: true
+    cost_per_1k_tokens: 0.001
+    description: "Primary provider - very cheap/free, excellent performance"
+
+  openrouter:
+    api_key_env: "OPENROUTER_API_KEY"
+    model: "anthropic/claude-3.5-sonnet"
+    max_tokens: 4000
+    priority: 2
+    supports_tools: true
+    supports_thinking: false
+    supports_mcp: true
+    cost_per_1k_tokens: 0.012
+    description: "Secondary provider - access to Claude via OpenRouter"
+
+  openai:
+    api_key_env: "OPENAI_API_KEY"
+    model: "gpt-4o"
+    max_tokens: 4000
+    priority: 3
+    supports_tools: true
+    supports_thinking: false
+    supports_mcp: true
+    cost_per_1k_tokens: 0.010
+    description: "Tertiary provider - OpenAI GPT-4o for code tasks"
+
+# Task-based routing optimized for cost and performance
+routing:
+  # Simple tasks - use cheapest provider first
+  simple:
+    - gemini      # Very cheap/free
+    - openrouter  # Moderate cost
+    - openai      # Higher cost
+
+  # General tasks - balanced approach
+  general:
+    - gemini
+    - openrouter
+    - openai
+
+  # Complex reasoning - use best available
+  reasoning:
+    - openrouter  # Claude 3.5 Sonnet via OpenRouter
+    - openai      # GPT-4o
+    - gemini      # Fallback
+
+  # Code generation and debugging - OpenAI first
+  code:
+    - openai      # Best for code
+    - openrouter  # Claude is also good for code
+    - gemini      # Fallback
+
+  # Tool-heavy tasks - any provider with tool support
+  tool_heavy:
+    - gemini      # Cheapest with tools
+    - openrouter
+    - openai
+
+  # MCP server tasks - all support MCP
+  mcp_tasks:
+    - gemini
+    - openrouter
+    - openai
+
+  # Planning and strategy tasks
+  planning:
+    - openrouter  # Claude for strategic thinking
+    - openai      # GPT-4o for planning
+    - gemini      # Cost-effective fallback
+
+# Quota management - generous limits for cost-effective providers
+quota_limits:
+  gemini:
+    daily_limit: 10000    # Very generous (cheap/free)
+    warning_threshold: 1000
+    reset_hour: 0
+
+  openrouter:
+    daily_limit: 2000     # Moderate usage
+    warning_threshold: 200
+    reset_hour: 0
+
+  openai:
+    daily_limit: 1000     # Conservative (more expensive)
+    warning_threshold: 100
+    reset_hour: 0
+
+# Tool configuration - same as Claude Code
+tools:
+  enabled:
+    - bash
+    - read
+    - write
+    - edit
+    - glob
+    - grep
+    - web_search
+    - web_fetch
+    - playwright
+    - agent
+    - ask_user_question
+    - task_create
+    - task_update
+    - skill
+
+  # Tool-specific settings
+  bash:
+    timeout_seconds: 120
+    dangerous_commands_blocked: true
+
+  playwright:
+    headless: true
+    timeout_seconds: 30
+
+  web_search:
+    max_results: 10
+    safe_search: true
+
+# MCP server configuration - same as Claude Code
+mcp_servers:
+  email:
+    path: "mcp/email/server.py"
+    enabled: true
+    requires_auth: true
+
+  social:
+    path: "mcp/social/server.py"
+    enabled: true
+    requires_auth: true
+
+  linkedin:
+    path: "mcp/linkedin/server.py"
+    enabled: true
+    requires_auth: true
+
+  twitter:
+    path: "mcp/twitter/server.py"
+    enabled: true
+    requires_auth: true
+
+# Skills configuration - same as Claude Code
+skills:
+  process-emails:
+    path: ".claude/skills/process-emails/"
+    enabled: true
+    description: "Process emails from Needs_Action"
+
+  multi-cli-processor:
+    path: ".claude/skills/multi-cli-processor/"
+    enabled: true
+    description: "Multi-provider AI processing"
+
+  pdf:
+    path: ".claude/skills/pdf/"
+    enabled: true
+    description: "PDF manipulation and processing"
+
+  browsing-with-playwright:
+    path: ".claude/skills/browsing-with-playwright/"
+    enabled: true
+    description: "Browser automation with Playwright"
+
+# Advanced features
+features:
+  thinking_mode:
+    enabled: true
+    providers: ["anthropic"]  # Only Anthropic supports thinking
+
+  parallel_processing:
+    enabled: true
+    max_concurrent: 3
+
+  caching:
+    enabled: true
+    duration_minutes: 30
+
+  fallback_chain:
+    enabled: true
+    max_retries: 3
+
+  cost_optimization:
+    enabled: true
+    prefer_cheaper_providers: true
+    daily_budget_usd: 10.00
+
+# Monitoring and logging
+monitoring:
+  log_level: "INFO"
+  log_file: "vault/logs/multi_provider_ai.log"
+
+  metrics:
+    track_usage: true
+    track_costs: true
+    track_performance: true
+
+  alerts:
+    quota_warning: true
+    cost_threshold: 8.00  # USD
+    error_threshold: 5  # errors per hour

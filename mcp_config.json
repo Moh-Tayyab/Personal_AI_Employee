@@ -10,7 +10,7 @@
       "args": ["mcp/email/server.py"],
       "env": {
         "VAULT_PATH": "/path/to/Personal_AI_Employee/vault",
-        "DRY_RUN": "true"
+        "DRY_RUN": "false"
       }
     },
     {
@@ -38,7 +38,7 @@
       "args": ["mcp/linkedin/server.py"],
       "env": {
         "VAULT_PATH": "/path/to/Personal_AI_Employee/vault",
-        "DRY_RUN": "true"
+        "DRY_RUN": "false"
       }
     },
     {
@@ -47,7 +47,7 @@
       "args": ["mcp/twitter/server.py"],
       "env": {
         "VAULT_PATH": "/path/to/Personal_AI_Employee/vault",
-        "DRY_RUN": "true"
+        "DRY_RUN": "false"
       }
     },
     {

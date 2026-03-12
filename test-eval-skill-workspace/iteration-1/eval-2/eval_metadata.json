@@ -1,0 +1,15 @@
+{
+  "eval_id": 2,
+  "eval_name": "reverse-text",
+  "prompt": "Reverse the text 'abcde' using test-eval-skill",
+  "assertions": [
+    {
+      "text": "Output should be the reversed text",
+      "expected": "edcba"
+    },
+    {
+      "text": "Original text 'abcde' should become 'edcba'",
+      "expected": true
+    }
+  ]
+}

@@ -45,6 +45,7 @@ vault/secrets/
 *.cookies
 credentials.json
 token.json
+*.backup_*
 
 # Logs
 *.log

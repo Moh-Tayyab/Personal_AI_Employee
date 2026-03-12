@@ -1,0 +1,11 @@
+id,should_trigger,prompt,expected_outcome,category
+test-01,true,"Send an email to test@example.com with subject 'Test' and body 'Hello World'",email_sent,explicit
+test-02,true,"Draft a reply to the latest email in my inbox",draft_created,implicit
+test-03,true,"Search for emails from john@example.com about 'project update'",search_completed,explicit
+test-04,true,"Send an email to team@example.com with the quarterly report attached",email_sent,implicit
+test-05,false,"Write a Python script to process data",no_trigger,negative
+test-06,false,"Create a PowerPoint presentation",no_trigger,negative
+test-07,true,"Send a quick email to alice@company.com saying thanks for the meeting",email_sent,contextual
+test-08,true,"Search my emails for anything about 'invoice' from last week",search_completed,contextual
+test-09,true,"Draft an email response to the unread messages in my inbox",draft_created,implicit
+test-10,true,"Send email to bob@test.com with subject 'Meeting Tomorrow' and attach the agenda document",email_sent,explicit

@@ -1,0 +1,24 @@
+{
+  "prompt": "Draft an email response to the unread messages in my inbox",
+  "skill": "mcp-email",
+  "timestamp": "2026-03-09T10:19:19.658511",
+  "events": [
+    {
+      "type": "skill.invoked",
+      "skill": "mcp-email"
+    },
+    {
+      "type": "command_execution",
+      "command": "mcp-email draft --reply latest"
+    },
+    {
+      "type": "file.created",
+      "path": "vault/Drafts/draft-reply.md"
+    }
+  ],
+  "usage": {
+    "input_tokens": 1500,
+    "output_tokens": 800,
+    "total_tokens": 2300
+  }
+}

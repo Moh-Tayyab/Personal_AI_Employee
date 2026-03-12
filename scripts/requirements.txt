@@ -1,0 +1,31 @@
+# Personal AI Employee - Python Dependencies
+
+# Core dependencies
+watchdog>=4.0.0
+playwright>=1.42.0
+
+# For Gmail watcher (optional)
+google-api-python-client>=2.118.0
+google-auth-httplib2>=0.2.0
+google-auth-oauthlib>=1.2.0
+
+# For WhatsApp watcher (optional)  
+# Uses playwright which is already listed
+
+# Utilities
+python-dotenv>=1.0.0
+requests>=2.31.0
+
+# Logging and monitoring
+python-json-logger>=2.0.0
+
+# For Odoo integration (Gold tier)
+jsonrpc2-client>=0.1.0
+
+# For social media (Gold tier)
+# tweepy>=4.14.0  # Twitter
+# facebook-sdk>=3.1.0  # Facebook
+# python-instagram>=2.1.3  # Instagram
+
+# For deployment automation
+# vercel-sdk>=1.0.0  # Vercel API

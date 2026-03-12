@@ -7,7 +7,7 @@ set -e
 # Configuration
 VAULT_PATH="${VAULT_PATH:-./vault}"
 DRY_RUN="${DRY_RUN:-true}"
-HOOK_PORT="${HOOK_PORT:-8080}"
+HOOK_PORT="${HOOK_PORT:-8081}"
 ENABLE_HOOKS="${ENABLE_HOOKS:-true}"
 
 # Colors
@@ -103,7 +103,7 @@ fi
 if [ -f "$VAULT_PATH/secrets/gmail_credentials.json" ]; then
     echo -e "${BLUE}Starting Gmail watcher...${NC}"
     start_service "gmail_watcher" \
-        "python3 watchers/gmail_watcher.py --vault $VAULT_PATH"
+        "python3 watchers/gmail_watcher.py --vault $VAULT_PATH --credentials $VAULT_PATH/secrets/gmail_credentials.json"
 fi
 
 # 4. File Watcher

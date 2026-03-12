@@ -54,7 +54,8 @@ class GmailWatcher(BaseWatcher):
         # If no valid credentials, run OAuth flow
         if not creds or not creds.valid:
             if creds and creds.expired and creds.refresh_token:
-                creds.refresh()
+                from google.auth.transport.requests import Request
+                creds.refresh(Request())
             else:
                 if not self.credentials_path:
                     raise ValueError("No credentials provided and no token found")
@@ -62,7 +63,7 @@ class GmailWatcher(BaseWatcher):
                 flow = InstalledAppFlow.from_client_secrets_file(
                     self.credentials_path, SCOPES
                 )
-                creds = flow.run_local_server(port=0)
+                creds = flow.run_local_server(port=8080)
 
             # Save credentials for next run
             token_file.parent.mkdir(parents=True, exist_ok=True)
@@ -90,6 +91,17 @@ class GmailWatcher(BaseWatcher):
                 self.logger.info("Attempting re-authentication...")
                 Path(self.token_path).unlink(missing_ok=True)
                 self._authenticate()
+            return []
+        except Exception as e:
+            # Handle token expiry during runtime
+            if 'Token expired' in str(e) or 'invalid_grant' in str(e):
+                self.logger.info("Token expired, attempting refresh...")
+                from google.auth.transport.requests import Request
+                try:
+                    self.service._credentials.refresh(Request())
+                except:
+                    Path(self.token_path).unlink(missing_ok=True)
+                    self._authenticate()
             return []
 
     def create_action_file(self, message) -> Path:

@@ -101,12 +101,20 @@ curl -X POST http://localhost:8080/webhook/approval \
 curl -X POST http://localhost:8080/trigger/process
 ```
 
-## Tiers Implemented
+## Tiers Status (Updated 2026-03-10)
 
-1. **Bronze** - Foundation (watchers, vault, Claude integration)
-2. **Silver** - Functional (MCP servers, approval workflow)
-3. **Gold** - Autonomous (Odoo, social media, CEO briefings)
-4. **Platinum** - Cloud + Local (24/7, vault sync)
+1. **Bronze** - 80% Complete (watchers, vault, ✅ Claude API integration)
+2. **Silver** - 70% Complete (✅ email send/search, MCP servers, approval workflow)
+3. **Gold** - 60% Complete (Odoo, social media, CEO briefings, needs testing)
+4. **Platinum** - 80% Complete (cloud deployment, PM2, health monitoring)
+
+**Critical Updates:**
+- ✅ Orchestrator now calls Claude API (was rule-based)
+- ✅ Email MCP server now sends via Gmail API (was stub)
+- ✅ Email search now works via Gmail API (was not implemented)
+- ✅ Approval notifications via webhooks (Slack/Discord)
+
+See [TIER_AUDIT.md](TIER_AUDIT.md) for detailed audit.
 
 ## Key Patterns
 

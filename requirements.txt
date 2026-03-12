@@ -1,0 +1,36 @@
+# Personal AI Employee - Python Dependencies
+
+# Core AI
+anthropic>=0.40.0
+python-dotenv>=1.0.0
+
+# Email & Google APIs
+google-auth>=2.35.0
+google-auth-oauthlib>=1.2.0
+google-auth-httplib2>=0.2.0
+google-api-python-client>=2.150.0
+
+# Browser Automation
+playwright>=1.48.0
+
+# MCP Protocol
+mcp>=1.0.0
+
+# Web & APIs
+requests>=2.32.0
+flask>=3.0.0
+
+# Odoo Integration (uses built-in xmlrpc.client)
+
+# File Watching
+watchdog>=5.0.0
+
+# Task Scheduling
+schedule>=1.2.0
+
+# Data Formats
+pyyaml>=6.0.2
+markdown>=3.7
+
+# Process Management (install globally with npm)
+# pm2 (via npm install -g pm2)

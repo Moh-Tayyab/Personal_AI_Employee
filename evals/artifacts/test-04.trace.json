@@ -1,0 +1,33 @@
+{
+  "prompt": "Send an email to team@example.com with the quarterly report attached",
+  "skill": "mcp-email",
+  "timestamp": "2026-03-09T10:19:19.651062",
+  "events": [
+    {
+      "type": "skill.invoked",
+      "skill": "mcp-email"
+    },
+    {
+      "type": "context.gathered",
+      "details": {
+        "source": "vault"
+      }
+    },
+    {
+      "type": "command_execution",
+      "command": "mcp-email send --to test@example.com"
+    },
+    {
+      "type": "email.sent",
+      "details": {
+        "to": "test@example.com",
+        "subject": "Test"
+      }
+    }
+  ],
+  "usage": {
+    "input_tokens": 1500,
+    "output_tokens": 800,
+    "total_tokens": 2300
+  }
+}

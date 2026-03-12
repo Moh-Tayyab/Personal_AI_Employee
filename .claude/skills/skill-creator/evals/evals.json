@@ -1,0 +1,102 @@
+{
+  "skill_name": "skill-creator",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "Create a new skill for processing PDF forms that extracts field information and fills them automatically",
+      "expected_output": "A complete skill directory with SKILL.md, scripts for PDF processing, and evals/evals.json with test cases",
+      "files": [],
+      "expectations": [
+        "Skill directory created with proper structure (SKILL.md, scripts/, references/)",
+        "SKILL.md contains clear workflow instructions for PDF form processing",
+        "Scripts included for deterministic operations (extract fields, fill forms)",
+        "evals/evals.json created with 3-5 test prompts",
+        "Skill description includes both what it does AND when to trigger"
+      ]
+    },
+    {
+      "id": 2,
+      "prompt": "Improve my existing email skill to handle attachments better",
+      "expected_output": "Updated skill with improved attachment handling, new test cases, and benchmark results",
+      "files": [],
+      "expectations": [
+        "Skill updated with attachment handling workflow",
+        "New eval prompts added for attachment scenarios",
+        "Benchmark run comparing old vs new version",
+        "Results reviewed with eval-viewer"
+      ]
+    },
+    {
+      "id": 3,
+      "prompt": "Create evals for my bigquery skill to test query generation accuracy",
+      "expected_output": "evals/evals.json with 10-15 test prompts covering different query types",
+      "files": [],
+      "expectations": [
+        "evals/evals.json created with proper schema",
+        "Test prompts cover explicit, implicit, and contextual triggers",
+        "Each eval has clear expectations/assertions",
+        "Includes negative controls (prompts that should NOT trigger)"
+      ]
+    },
+    {
+      "id": 4,
+      "prompt": "Run evaluations on my docx skill and show me the results",
+      "expected_output": "Benchmark results with pass rates, timing data, and viewer URL",
+      "files": [],
+      "expectations": [
+        "With-skill and baseline runs executed",
+        "Grading completed for all expectations",
+        "benchmark.json generated with aggregated results",
+        "eval-viewer launched or static HTML generated"
+      ]
+    },
+    {
+      "id": 5,
+      "prompt": "Optimize my skill's description to trigger more accurately",
+      "expected_output": "Improved skill description with better trigger rate",
+      "files": [],
+      "expectations": [
+        "Current trigger rate measured with run_eval.py",
+        "Description rewritten to be more 'pushy' about triggers",
+        "New trigger rate measured and compared",
+        "Improvement documented"
+      ]
+    },
+    {
+      "id": 6,
+      "prompt": "Write a Python script for my skill that validates output format",
+      "expected_output": "Tested Python script in skills/scripts/ directory",
+      "files": [],
+      "expectations": [
+        "Script created in scripts/ directory",
+        "Script is executable and tested",
+        "Script validates output format deterministically",
+        "Script integrated into skill workflow"
+      ]
+    },
+    {
+      "id": 7,
+      "prompt": "Add reference documentation to my skill for API endpoints",
+      "expected_output": "API reference documentation in skills/reference/ directory",
+      "files": [],
+      "expectations": [
+        "Reference file created in references/ directory",
+        "Documentation includes authentication, endpoints, examples",
+        "SKILL.md updated to reference the new file",
+        "Progressive disclosure pattern followed"
+      ]
+    },
+    {
+      "id": 8,
+      "prompt": "Create a skill for generating CEO briefing reports from weekly data",
+      "expected_output": "Complete CEO briefing skill with intelligence-gathering workflow",
+      "files": [],
+      "expectations": [
+        "Skill created with proper structure",
+        "Workflow includes data gathering from multiple sources",
+        "Report template defined with executive summary, key findings, recommendations",
+        "Evals created to test report quality"
+      ]
+    }
+  ]
+}

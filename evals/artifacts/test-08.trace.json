@@ -1,0 +1,29 @@
+{
+  "prompt": "Search my emails for anything about 'invoice' from last week",
+  "skill": "mcp-email",
+  "timestamp": "2026-03-09T10:19:19.656545",
+  "events": [
+    {
+      "type": "skill.invoked",
+      "skill": "mcp-email"
+    },
+    {
+      "type": "command_execution",
+      "command": "mcp-email search --query \"project update\""
+    },
+    {
+      "type": "email.search",
+      "results": [
+        {
+          "id": "123",
+          "subject": "Project Update"
+        }
+      ]
+    }
+  ],
+  "usage": {
+    "input_tokens": 1500,
+    "output_tokens": 800,
+    "total_tokens": 2300
+  }
+}

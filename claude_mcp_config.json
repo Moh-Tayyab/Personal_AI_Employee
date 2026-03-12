@@ -1,0 +1,25 @@
+{
+  "mcpServers": {
+    "email": {
+      "command": "python3",
+      "args": [
+        "/home/muhammad_tayyab/hackathon/Personal_AI_Employee/mcp/email/server.py"
+      ],
+      "env": {
+        "VAULT_PATH": "/home/muhammad_tayyab/hackathon/Personal_AI_Employee/vault",
+        "DRY_RUN": "false",
+        "GMAIL_TOKEN_PATH": "/home/muhammad_tayyab/hackathon/Personal_AI_Employee/vault/secrets/gmail_token.json",
+        "GMAIL_CREDENTIALS_PATH": "/home/muhammad_tayyab/hackathon/Personal_AI_Employee/vault/secrets/gmail_credentials.json"
+      }
+    },
+    "filesystem": {
+      "command": "python3",
+      "args": [
+        "/home/muhammad_tayyab/hackathon/Personal_AI_Employee/mcp/filesystem/server.py"
+      ],
+      "env": {
+        "VAULT_PATH": "/home/muhammad_tayyab/hackathon/Personal_AI_Employee/vault"
+      }
+    }
+  }
+}
