@@ -28,11 +28,14 @@ try:
     from multi_cli_manager import MultiCLIManager
     from quota_manager import QuotaManager
     from multi_provider_ai import MultiProviderAI
+    from agent_teams_manager import AgentTeamsManager
     MULTI_CLI_AVAILABLE = True
     MULTI_PROVIDER_AVAILABLE = True
+    AGENT_TEAMS_AVAILABLE = True
 except ImportError:
     MULTI_CLI_AVAILABLE = False
     MULTI_PROVIDER_AVAILABLE = False
+    AGENT_TEAMS_AVAILABLE = False
     logging.warning("Multi-provider system not available - falling back to original API calls")
 
 # Load environment variables
@@ -81,6 +84,36 @@ class Orchestrator:
         else:
             self.multi_cli = None
             self.quota_manager = None
+
+        # Initialize Agent Teams Manager (NEW)
+        if AGENT_TEAMS_AVAILABLE:
+            try:
+                self.agent_teams = AgentTeamsManager(self.vault_path)
+                logger.info("✅ Agent Teams system initialized")
+            except Exception as e:
+                logger.warning(f"Agent Teams initialization failed: {e}")
+                self.agent_teams = None
+        else:
+            self.agent_teams = None
+                logger.info("✅ Multi-CLI system initialized (legacy mode)")
+            except Exception as e:
+                logger.warning(f"Multi-CLI initialization failed: {e}")
+                self.multi_cli = None
+                self.quota_manager = None
+        else:
+            self.multi_cli = None
+            self.quota_manager = None
+
+        # Initialize Agent Teams Manager (NEW)
+        if AGENT_TEAMS_AVAILABLE:
+            try:
+                self.agent_teams = AgentTeamsManager(self.vault_path)
+                logger.info("✅ Agent Teams system initialized")
+            except Exception as e:
+                logger.warning(f"Agent Teams initialization failed: {e}")
+                self.agent_teams = None
+        else:
+            self.agent_teams = None
 
         # Directories
         self.needs_action = self.vault_path / 'Needs_Action'
@@ -136,6 +169,10 @@ class Orchestrator:
             logger.info("[DRY RUN] Would call AI API")
             logger.info(f"Prompt: {prompt}")
             return True
+
+        # Check if we should create an agent team for this work
+        if self.agent_teams and self._should_use_agent_team(prompt):
+            return self._process_with_agent_team(prompt)
 
         # Use Multi-Provider AI system if available (PREFERRED - maintains Claude Code functionality)
         if self.multi_provider_ai:
@@ -327,6 +364,177 @@ status: pending_review
             return "simple"
 
         return "general"
+
+    def _should_use_agent_team(self, prompt: str) -> bool:
+        """Determine if the current work should use an agent team."""
+        if not self.agent_teams:
+            return False
+
+        # Get current work items
+        needs_action_items = [f.name for f in self.check_needs_action()]
+
+        # Use agent teams manager to determine if team is warranted
+        return self.agent_teams.should_create_team(prompt, len(needs_action_items))
+
+    def _process_with_agent_team(self, prompt: str) -> bool:
+        """Process work using an agent team."""
+        try:
+            logger.info("🤖 Creating agent team for coordinated processing")
+
+            # Get current work items for team composition analysis
+            needs_action_items = [f.name for f in self.check_needs_action()]
+
+            # Get team composition suggestion
+            team_suggestion = self.agent_teams.suggest_team_composition(needs_action_items)
+
+            # Create team prompt
+            team_prompt = self.agent_teams.create_team_prompt(team_suggestion)
+
+            logger.info(f"Suggested team size: {team_suggestion['recommended_size']} members")
+            logger.info(f"Total tasks to distribute: {team_suggestion['total_tasks']}")
+
+            # Log team creation
+            self.agent_teams.log_team_activity("orchestrator-team", "Team Creation Initiated", {
+                "Prompt": prompt[:200] + "..." if len(prompt) > 200 else prompt,
+                "Suggested Team Size": team_suggestion['recommended_size'],
+                "Total Tasks": team_suggestion['total_tasks'],
+                "Task Distribution": str(team_suggestion['task_distribution'])
+            })
+
+            # Use multi-provider AI to create the team
+            if self.multi_provider_ai:
+                provider_used, response = self.multi_provider_ai.process_with_tools(
+                    prompt=team_prompt,
+                    task_type="team_coordination",
+                    use_tools=True,
+                    thinking=True
+                )
+
+                if provider_used != "none":
+                    logger.info(f"✅ Agent team created via {provider_used}")
+
+                    # Save team creation log
+                    timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+                    team_log_path = self.vault_path / 'Teams' / 'Active' / f'TEAM_CREATION_{timestamp}.md'
+
+                    team_log_content = f"""---
+type: agent_team_creation
+created: {datetime.now().isoformat()}
+provider: {provider_used}
+status: active
+---
+
+# Agent Team Creation Log
+
+## Original Request
+{prompt}
+
+## Team Composition Analysis
+- **Recommended Size**: {team_suggestion['recommended_size']} members
+- **Total Tasks**: {team_suggestion['total_tasks']}
+- **Task Distribution**: {team_suggestion['task_distribution']}
+
+## Team Creation Prompt
+{team_prompt}
+
+## AI Response
+{response}
+
+---
+
+## Team Members
+{chr(10).join([f"- **{member['role']}**: {member['description']} ({member['estimated_tasks']} tasks)" for member in team_suggestion['suggested_team']])}
+"""
+
+                    team_log_path.write_text(team_log_content)
+                    logger.info(f"Team creation log saved: {team_log_path}")
+
+                    return True
+                else:
+                    logger.warning("Team creation failed, falling back to single-agent processing")
+                    return self._process_with_multi_provider_ai(prompt)
+            else:
+                logger.warning("Multi-provider AI not available for team creation")
+                return False
+
+        except Exception as e:
+            logger.error(f"Error in agent team processing: {e}")
+            logger.info("Falling back to single-agent processing")
+            if self.multi_provider_ai:
+                return self._process_with_multi_provider_ai(prompt)
+            else:
+                return False
+
+    def monitor_agent_teams(self):
+        """Monitor active agent teams and perform maintenance."""
+        if not self.agent_teams:
+            return
+
+        try:
+            # Get status of all active teams
+            active_teams = self.agent_teams.get_active_teams()
+
+            if active_teams:
+                logger.info(f"Monitoring {len(active_teams)} active agent teams")
+
+                for team in active_teams:
+                    team_name = team['team_name']
+
+                    # Log team status
+                    if team['issues']:
+                        logger.warning(f"Team {team_name} has issues: {', '.join(team['issues'])}")
+
+                    # Check for completed teams
+                    if (team['tasks']['completed'] > 0 and
+                        team['tasks']['pending'] == 0 and
+                        team['tasks']['in_progress'] == 0):
+                        logger.info(f"Team {team_name} appears to have completed all tasks")
+
+                # Create status report
+                status_report = self.agent_teams.create_team_status_report()
+
+                # Save status report to vault
+                status_path = self.vault_path / 'Teams' / 'team_status_report.md'
+                status_path.write_text(status_report)
+
+                # Clean up completed teams
+                self.agent_teams.cleanup_completed_teams()
+
+            else:
+                logger.debug("No active agent teams to monitor")
+
+        except Exception as e:
+            logger.error(f"Error monitoring agent teams: {e}")
+
+    def get_system_status(self) -> dict:
+        """Get comprehensive system status including agent teams."""
+        status = {
+            'timestamp': datetime.now().isoformat(),
+            'vault_path': str(self.vault_path),
+            'dry_run': self.dry_run,
+            'ralph_mode': self.ralph_mode,
+            'current_task': self.current_task,
+            'needs_action_count': len(self.check_needs_action()),
+            'pending_approval_count': len(self.check_pending_approval()),
+            'approved_count': len(self.check_approved()),
+            'multi_provider_available': self.multi_provider_ai is not None,
+            'multi_cli_available': self.multi_cli is not None,
+            'agent_teams_available': self.agent_teams is not None,
+            'agent_teams': None
+        }
+
+        # Add agent teams status if available
+        if self.agent_teams:
+            try:
+                active_teams = self.agent_teams.get_active_teams()
+                status['agent_teams'] = {
+                    'active_count': len(active_teams),
+                    'teams': active_teams
+                }
+            except Exception as e:
+                status['agent_teams'] = {'error': str(e)}
+
+        return status
 
     def _process_with_multi_cli(self, prompt: str) -> bool:
         """Process using the multi-CLI system with automatic fallback."""
@@ -1026,17 +1234,52 @@ _Created by Orchestrator at {datetime.now().isoformat()}_
         """Main orchestration loop."""
         logger.info(f"Starting Orchestrator (dry_run={self.dry_run})")
 
+        # Track last team monitoring time
+        last_team_monitor = datetime.now()
+        team_monitor_interval = timedelta(minutes=5)  # Monitor teams every 5 minutes
+
         while self.running:
             try:
+                # Monitor agent teams periodically
+                if (self.agent_teams and
+                    datetime.now() - last_team_monitor > team_monitor_interval):
+                    self.monitor_agent_teams()
+                    last_team_monitor = datetime.now()
+
                 # Check Needs_Action
                 needs_action = self.check_needs_action()
                 if needs_action:
                     logger.info(f"Found {len(needs_action)} items in Needs_Action")
+
+                    # Determine if we should use agent teams for this batch
+                    if len(needs_action) > 1:
+                        # Create a summary prompt for team decision
+                        items_summary = "\n".join([f"- {item.name}" for item in needs_action])
+                        batch_prompt = f"""Process {len(needs_action)} items requiring attention:
+
+{items_summary}
+
+Items include various types of work that may benefit from parallel processing by specialized teammates."""
+
+                        # Check if this warrants a team approach
+                        if self._should_use_agent_team(batch_prompt):
+                            logger.info("🤖 Creating agent team for batch processing")
+                            success = self._process_with_agent_team(batch_prompt)
+                            if success:
+                                # Team created successfully, let them handle the work
+                                logger.info("Agent team created, monitoring progress...")
+                                # Move items to a processing state or let team claim them
+                                time.sleep(30)  # Give team time to start working
+                                continue
+                            else:
+                                logger.warning("Team creation failed, falling back to single-agent processing")
+
+                    # Process items individually if no team was created
                     for item in needs_action:
                         # Create a Plan.md first
                         self.create_plan(item)
 
-                        # Then trigger Claude to process
+                        # Then trigger AI to process
                         prompt = f"""Process the item in {item.name}.
 
 The plan has been created in Plans/ folder.
@@ -1046,7 +1289,7 @@ The plan has been created in Plans/ folder.
 4. If approval needed, create request in Pending_Approval/
 5. When complete, move original to Done/ and update plan status to completed
 """
-                        self.trigger_claude(prompt)
+                        self.trigger_ai(prompt)
                         self.move_to_in_progress(item)
 
                 # Check Approved folder

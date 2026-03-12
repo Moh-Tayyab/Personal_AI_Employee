@@ -11,15 +11,16 @@ A local-first, autonomous AI agent that:
 - Executes actions through MCP (Model Context Protocol) servers
 - Requires human approval for sensitive operations
 - **NEW**: Exposes HTTP endpoints for external integrations and webhooks
+- **NEW**: Supports agent teams for coordinated multi-domain workflows
 
 ## Architecture
 
 ```
 External Sources → Watchers → Obsidian Vault → Claude Code → MCP → Actions
-                      ↓
-               HTTP Hooks (NEW)
-                      ↓
-         External Webhooks / Dashboard / API
+                      ↓                           ↓
+               HTTP Hooks (NEW)            Agent Teams (NEW)
+                      ↓                           ↓
+         External Webhooks / Dashboard    Coordinated Multi-Agent Workflows
 ```
 
 ## Key Files
@@ -86,6 +87,10 @@ The hook server provides REST endpoints for external integration:
 | `/webhook/approval` | POST | Approval callbacks |
 | `/webhook/github` | POST | GitHub webhook integration |
 | `/trigger/process` | POST | Trigger processing manually |
+| `/teams/create` | POST | Create new agent team |
+| `/teams/list` | GET | List active teams |
+| `/teams/{id}/tasks` | GET | Get team task list |
+| `/teams/{id}/members` | GET | Get team members |
 
 Example usage:
 ```bash
@@ -123,6 +128,9 @@ See [TIER_AUDIT.md](TIER_AUDIT.md) for detailed audit.
 - **Ralph Wiggum Loop**: Claude keeps working until task is complete
 - **Parallel Processing**: Use Agent tool for concurrent task execution (NEW)
 - **Interactive Approval**: AskUserQuestion with markdown preview for decisions (NEW)
+- **Agent Teams**: Coordinate multiple Claude instances for complex multi-domain workflows (NEW)
+- **Team Task Lists**: Shared task coordination with dependencies and ownership (NEW)
+- **Quality Gates**: Automated validation before teammates go idle (NEW)
 
 ## Agent Skills (NEW)
 
