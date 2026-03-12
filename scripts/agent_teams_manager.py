@@ -87,28 +87,28 @@ class AgentTeamsManager:
         # Suggest team based on work distribution
         suggested_team = []
 
-        if item_types["email"] >= 3:
+        if item_types["email"] >= 1:
             suggested_team.append({
                 "role": "email-specialist",
                 "description": "Handle email processing, responses, and follow-ups using email MCP server",
                 "estimated_tasks": item_types["email"]
             })
 
-        if item_types["social"] >= 2:
+        if item_types["social"] >= 1:
             suggested_team.append({
                 "role": "social-media-manager",
                 "description": "Manage social media posts, engagement, and content using social MCP servers",
                 "estimated_tasks": item_types["social"]
             })
 
-        if item_types["accounting"] >= 2:
+        if item_types["accounting"] >= 1:
             suggested_team.append({
                 "role": "accounting-specialist",
                 "description": "Process invoices, expenses, and financial data using Odoo MCP server",
                 "estimated_tasks": item_types["accounting"]
             })
 
-        if item_types["research"] >= 2:
+        if item_types["research"] >= 1:
             suggested_team.append({
                 "role": "research-analyst",
                 "description": "Gather intelligence, analyze data, and provide insights",
