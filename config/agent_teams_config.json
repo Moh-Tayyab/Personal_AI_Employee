@@ -1,0 +1,230 @@
+{
+  "version": "1.0",
+  "description": "Agent Teams Configuration for Silver and Gold Tier Completion",
+  "teams": {
+    "silver-tier-completion": {
+      "name": "Silver Tier Completion Team",
+      "description": "Complete all Silver tier requirements using specialized agents",
+      "objective": "Process emails, manage social media, and handle approvals with human-in-the-loop workflow",
+      "members": [
+        {
+          "id": "email-specialist",
+          "role": "Email Specialist",
+          "description": "Handle all email-related operations using Gmail MCP server",
+          "responsibilities": [
+            "Process emails from vault/Needs_Action/email/",
+            "Draft responses for approval",
+            "Send approved emails via Gmail API",
+            "Search emails for context and history",
+            "Move processed items to vault/Done/"
+          ],
+          "tools": ["email_mcp_server", "gmail_api"],
+          "autonomy_level": "L2 - Draft only, send requires approval",
+          "success_criteria": "All emails processed with drafts created or sent"
+        },
+        {
+          "id": "social-media-manager",
+          "role": "Social Media Manager",
+          "description": "Manage LinkedIn, Twitter, and Facebook content creation and posting",
+          "responsibilities": [
+            "Create social media posts from vault/Needs_Action/",
+            "Schedule posts for optimal engagement times",
+            "Post to LinkedIn, Twitter, Facebook via MCP servers",
+            "Monitor engagement and respond to comments",
+            "Maintain brand voice consistency"
+          ],
+          "tools": ["linkedin_mcp", "twitter_mcp", "facebook_mcp", "playwright"],
+          "autonomy_level": "L3 - Auto-post for routine content, approval for announcements",
+          "success_criteria": "All social tasks completed with posts published"
+        },
+        {
+          "id": "approval-coordinator",
+          "role": "Approval Coordinator",
+          "description": "Manage the human-in-the-loop approval workflow",
+          "responsibilities": [
+            "Identify items requiring human approval",
+            "Create approval requests in vault/Pending_Approval/",
+            "Send notifications via configured channels",
+            "Move approved items to vault/Approved/",
+            "Track approval status and follow up on pending items"
+          ],
+          "tools": ["filesystem", "notification_system"],
+          "autonomy_level": "L1 - No autonomous action, coordinates with human",
+          "success_criteria": "All approvals tracked and executed promptly"
+        }
+      ],
+      "workflows": {
+        "email_processing": {
+          "trigger": "New email in vault/Needs_Action/email/",
+          "steps": [
+            { "step": 1, "agent": "email-specialist", "action": "Analyze email and determine response" },
+            { "step": 2, "agent": "email-specialist", "action": "Draft response or create approval request" },
+            { "step": 3, "agent": "approval-coordinator", "action": "Route for approval if needed" },
+            { "step": 4, "agent": "email-specialist", "action": "Send email if approved or auto-approved" },
+            { "step": 5, "agent": "email-specialist", "action": "Log action and move to Done/" }
+          ]
+        },
+        "social_media_posting": {
+          "trigger": "New social media task in vault/Needs_Action/",
+          "steps": [
+            { "step": 1, "agent": "social-media-manager", "action": "Analyze requirements and create content" },
+            { "step": 2, "agent": "social-media-manager", "action": "Check if approval needed based on content type" },
+            { "step": 3, "agent": "approval-coordinator", "action": "Route for approval if needed" },
+            { "step": 4, "agent": "social-media-manager", "action": "Publish via appropriate MCP server" },
+            { "step": 5, "agent": "social-media-manager", "action": "Log action and move to Done/" }
+          ]
+        }
+      }
+    },
+    "gold-tier-completion": {
+      "name": "Gold Tier Completion Team",
+      "description": "Complete all Gold tier requirements with accounting and executive reporting",
+      "objective": "Handle accounting via Odoo, manage all social platforms, and generate CEO briefings",
+      "members": [
+        {
+          "id": "accounting-specialist",
+          "role": "Accounting Specialist",
+          "description": "Handle all accounting operations via Odoo ERP integration",
+          "responsibilities": [
+            "Process invoices from vault/Needs_Action/",
+            "Create and validate invoices in Odoo",
+            "Track expenses and categorize them",
+            "Manage customer/vendor contacts",
+            "Generate financial reports",
+            "Flag high-value transactions for approval"
+          ],
+          "tools": ["odoo_mcp_server", "xmlrpc_api"],
+          "autonomy_level": "L2 - Create drafts, validate requires approval for >$500",
+          "success_criteria": "All accounting items processed in Odoo"
+        },
+        {
+          "id": "linkedin-manager",
+          "role": "LinkedIn Manager",
+          "description": "Specialized agent for LinkedIn professional networking",
+          "responsibilities": [
+            "Create and publish LinkedIn posts",
+            "Manage LinkedIn company page",
+            "Schedule posts for business hours",
+            "Engage with comments and messages",
+            "Monitor LinkedIn analytics"
+          ],
+          "tools": ["linkedin_mcp", "playwright"],
+          "autonomy_level": "L3 - Auto-post routine content",
+          "success_criteria": "Active LinkedIn presence with regular posts"
+        },
+        {
+          "id": "twitter-manager",
+          "role": "Twitter/X Manager",
+          "description": "Specialized agent for Twitter/X microblogging",
+          "responsibilities": [
+            "Create and publish tweets (280 chars)",
+            "Manage Twitter threads for longer content",
+            "Schedule tweets for optimal engagement",
+            "Monitor mentions and respond",
+            "Track Twitter analytics"
+          ],
+          "tools": ["twitter_mcp", "playwright"],
+          "autonomy_level": "L3 - Auto-tweet routine updates",
+          "success_criteria": "Active Twitter presence with daily tweets"
+        },
+        {
+          "id": "facebook-manager",
+          "role": "Facebook Manager",
+          "description": "Specialized agent for Facebook page management",
+          "responsibilities": [
+            "Create and publish Facebook posts",
+            "Manage Facebook Messenger responses",
+            "Schedule posts and events",
+            "Monitor page insights",
+            "Engage with comments"
+          ],
+          "tools": ["facebook_mcp", "playwright"],
+          "autonomy_level": "L3 - Auto-post routine content",
+          "success_criteria": "Active Facebook page with regular engagement"
+        },
+        {
+          "id": "executive-reporter",
+          "role": "Executive Reporter",
+          "description": "Generate weekly CEO briefings and executive reports",
+          "responsibilities": [
+            "Collect weekly activity data from all sources",
+            "Analyze KPIs and business metrics",
+            "Generate comprehensive CEO briefings",
+            "Identify bottlenecks and suggest improvements",
+            "Save briefings to vault/Briefings/"
+          ],
+          "tools": ["filesystem", "data_analysis"],
+          "autonomy_level": "L4 - Full autonomy for report generation",
+          "success_criteria": "Weekly briefings generated with actionable insights"
+        },
+        {
+          "id": "error-recovery-specialist",
+          "role": "Error Recovery Specialist",
+          "description": "Monitor and handle errors across all systems",
+          "responsibilities": [
+            "Monitor logs for errors and exceptions",
+            "Implement retry logic for failed operations",
+            "Escalate persistent issues to human",
+            "Document error patterns and resolutions",
+            "Maintain system health dashboard"
+          ],
+          "tools": ["filesystem", "logging_system", "notification_system"],
+          "autonomy_level": "L3 - Auto-retry with exponential backoff",
+          "success_criteria": "All errors logged and recovered where possible"
+        }
+      ],
+      "workflows": {
+        "invoice_processing": {
+          "trigger": "New invoice in vault/Needs_Action/",
+          "steps": [
+            { "step": 1, "agent": "accounting-specialist", "action": "Extract invoice details" },
+            { "step": 2, "agent": "accounting-specialist", "action": "Create invoice in Odoo" },
+            { "step": 3, "agent": "accounting-specialist", "action": "Check amount against approval threshold" },
+            { "step": 4, "agent": "approval-coordinator", "action": "Route for approval if >$500" },
+            { "step": 5, "agent": "accounting-specialist", "action": "Validate invoice if approved" },
+            { "step": 6, "agent": "accounting-specialist", "action": "Log and categorize expense" }
+          ]
+        },
+        "ceo_briefing_generation": {
+          "trigger": "Weekly schedule (Monday 8 AM) or on-demand",
+          "steps": [
+            { "step": 1, "agent": "executive-reporter", "action": "Collect all activity logs from week" },
+            { "step": 2, "agent": "executive-reporter", "action": "Aggregate data from all MCP servers" },
+            { "step": 3, "agent": "executive-reporter", "action": "Calculate KPIs and metrics" },
+            { "step": 4, "agent": "executive-reporter", "action": "Identify bottlenecks and issues" },
+            { "step": 5, "agent": "executive-reporter", "action": "Generate comprehensive briefing document" },
+            { "step": 6, "agent": "executive-reporter", "action": "Save to vault/Briefings/ and notify CEO" }
+          ]
+        },
+        "social_media_coordination": {
+          "trigger": "Content ready for multi-platform posting",
+          "steps": [
+            { "step": 1, "agent": "linkedin-manager", "action": "Create LinkedIn-optimized content" },
+            { "step": 2, "agent": "twitter-manager", "action": "Create Twitter-optimized content (thread if needed)" },
+            { "step": 3, "agent": "facebook-manager", "action": "Create Facebook-optimized content" },
+            { "step": 4, "agent": "approval-coordinator", "action": "Check if approval needed" },
+            { "step": 5, "agent": "linkedin-manager", "action": "Publish to LinkedIn" },
+            { "step": 6, "agent": "twitter-manager", "action": "Publish to Twitter" },
+            { "step": 7, "agent": "facebook-manager", "action": "Publish to Facebook" },
+            { "step": 8, "agent": "error-recovery-specialist", "action": "Monitor for posting errors" }
+          ]
+        }
+      }
+    }
+  },
+  "global_settings": {
+    "vault_path": "./vault",
+    "log_level": "INFO",
+    "approval_thresholds": {
+      "email_recipients": 10,
+      "payment_amount": 500,
+      "social_media_announcements": true
+    },
+    "notification_channels": ["console", "file"],
+    "retry_config": {
+      "max_retries": 3,
+      "backoff_multiplier": 2,
+      "initial_delay_seconds": 5
+    }
+  }
+}
