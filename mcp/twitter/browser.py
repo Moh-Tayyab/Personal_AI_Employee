@@ -141,6 +141,8 @@ class TwitterBrowser:
                 await next_button.click()
                 await self.page.wait_for_timeout(3000)
 
+            await self.page.wait_for_timeout(3000)
+
             # Check for unusual activity / phone verification
             unusual_activity = await self.page.query_selector('input[data-testid="ocfEnterTextTextInput"], input[name="text"]:not([autocomplete="username"])')
             if unusual_activity:
@@ -150,21 +152,38 @@ class TwitterBrowser:
                     "url": self.page.url
                 }
 
-            # Fill password
+            # Fill password - try more selectors and wait for page transition
             password_field = None
+            
+            # First, wait for the password field to appear (Twitter loads it dynamically)
+            try:
+                await self.page.wait_for_selector('input[type="password"]', timeout=15000)
+            except:
+                pass
+            
             for selector in [
                 'input[name="password"]',
                 'input[type="password"]',
                 'input[autocomplete="current-password"]',
+                'input[data-testid="LoginForm_Login_Password"]',
             ]:
                 try:
-                    password_field = await self.page.wait_for_selector(selector, timeout=10000)
-                    break
+                    password_field = await self.page.wait_for_selector(selector, timeout=5000)
+                    if password_field:
+                        break
                 except:
                     continue
 
             if not password_field:
-                return {"status": "login_failed", "error": "Password field not found"}
+                # Check if we were redirected to verification page
+                current_url = self.page.url
+                if "challenge" in current_url or "verification" in current_url:
+                    return {
+                        "status": "needs_verification",
+                        "message": "Twitter security verification required. Complete manually.",
+                        "url": current_url
+                    }
+                return {"status": "login_failed", "error": "Password field not found. Twitter may have changed login flow.", "url": current_url}
 
             await password_field.click()
             await self.page.wait_for_timeout(500)

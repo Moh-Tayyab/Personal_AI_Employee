@@ -1,12 +1,24 @@
 {
   "mcpServers": {
+    "codex-subagent": {
+      "type": "stdio",
+      "command": "uvx",
+      "args": ["codex-as-mcp@latest"]
+    },
     "playwright": {
       "type": "stdio",
       "command": "npx",
-      "args": [
-        "@playwright/mcp@latest"
-      ],
-      "env": {}
+      "args": ["@anthropic/browser-mcp"]
+    },
+    "git": {
+      "type": "stdio",
+      "command": "uvx",
+      "args": ["mcp-server-git@latest"]
+    },
+    "web-search": {
+      "type": "stdio",
+      "command": "uvx",
+      "args": ["mcp-server-web-search@latest"]
     }
   }
 }

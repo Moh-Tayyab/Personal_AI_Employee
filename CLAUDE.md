@@ -12,6 +12,161 @@ A local-first, autonomous AI agent that:
 - Requires human approval for sensitive operations
 - **NEW**: Exposes HTTP endpoints for external integrations and webhooks
 - **NEW**: Supports agent teams for coordinated multi-domain workflows
+- **NEW**: Kiro for Claude Code integration for spec-driven development
+
+## Kiro for Claude Code Integration
+
+This project is configured with **Kiro for Claude Code** VSCode extension for spec-driven development.
+
+### Kiro Directory Structure
+```
+.claude/
+├── specs/                      # Feature specifications
+│   └── email-notification-system/
+│       ├── requirements.md     # What to build
+│       ├── design.md           # How to build
+│       └── tasks.md            # Implementation steps
+├── agents/kfc/                 # Built-in workflow agents
+│   ├── spec-requirements.md    # Requirements specialist
+│   ├── spec-design.md          # Design specialist
+│   ├── spec-tasks.md           # Task planning specialist
+│   ├── spec-judge.md           # Quality assurance agent
+│   ├── spec-impl.md            # Implementation specialist
+│   ├── spec-test.md            # Testing specialist
+│   └── spec-system-prompt-loader.md  # Workflow coordinator
+├── steering/                   # AI guidance documents
+│   ├── product.md              # Product vision and principles
+│   ├── tech.md                 # Technical standards
+│   └── structure.md            # Code organization
+└── settings/
+    └── kfc-settings.json       # Kiro configuration
+```
+
+### Kiro Workflow
+
+1. **Create Spec with Sub-Agents** (Recommended):
+   - Click Kiro for CC icon in VSCode activity bar
+   - Click "New Spec with Agents" button (✨)
+   - Enter feature description
+   - Specialized agents work in parallel:
+     - Requirements Agent → Defines WHAT to build
+     - Design Agent → Architect HOW to build
+     - Tasks Agent → Breaks into implementation steps
+     - Judge Agent → Reviews and approves each phase
+
+2. **Traditional Method**:
+   - Click "+" in SPEC view
+   - Generate requirements → design → tasks sequentially
+   - Review at each step
+
+3. **Implementation**:
+   - Execute tasks from `tasks.md` one by one
+   - Update task status as work progresses
+   - Test agent validates completion
+
+### Kiro Commands
+```bash
+# View spec status
+ls .claude/specs/
+
+# View agent configurations
+cat .claude/agents/kfc/*.md
+
+# View steering documents
+cat .claude/steering/*.md
+
+# Check Kiro settings
+cat .claude/settings/kfc-settings.json
+```
+
+### Sub-Agent Roles
+
+| Agent | Responsibility |
+|-------|---------------|
+| Requirements | User stories, functional/non-functional requirements |
+| Design | Architecture, data models, API contracts |
+| Tasks | Implementation breakdown, dependencies, estimates |
+| Judge | Quality review, approval/rejection decisions |
+| Implementation | Code execution, following design |
+| Test | Validation, test coverage, sign-off |
+| System Prompt Loader | Workflow coordination, context management |
+
+## Groq Integration (Fast Inference)
+
+This project integrates **Groq** for ultra-fast inference (500+ tokens/sec), ideal for:
+- Email classification before Claude Code processing
+- High-volume text categorization
+- Sentiment analysis and keyword extraction
+- Quick pre-processing to reduce Claude API costs
+
+### Configuration
+
+**Environment Variables** (in `.env`):
+```bash
+GROQ_API_KEY=gsk_xxx  # Your Groq API key
+GROQ_MODEL=llama-3.3-70b-versatile
+GROQ_BASE_URL=https://api.groq.com/openai/v1
+```
+
+### Usage
+
+**Python API**:
+```python
+from utils.groq_client import GroqClient, classify_email, detect_urgency
+
+client = GroqClient()
+
+# Classify email
+category = classify_email("URGENT: Server down!")  # Returns: "urgent"
+
+# Detect urgency
+urgency = detect_urgency("Need this ASAP!")  # Returns: "high"
+
+# Custom classification
+result = client.classify_text(
+    "Invoice #123 attached",
+    categories=["invoice", "normal", "spam"]
+)
+
+# Summarize
+summary = client.summarize(long_text, max_length=50)
+
+# Extract keywords
+keywords = client.extract_keywords(email_body, max_keywords=5)
+```
+
+### Hybrid Workflow (Groq + Claude)
+
+```
+Email → Groq (classify) → If urgent → Claude Code (reasoning) → Action
+                         If normal → Log only
+```
+
+**Example**:
+```python
+from utils.groq_client import classify_email
+from orchestrator import process_with_claude
+
+# Fast pre-classification with Groq
+category = classify_email(email_text)
+
+# Only use Claude for important items
+if category in ["urgent", "invoice"]:
+    process_with_claude(email)  # Expensive but powerful
+else:
+    log_only(email)  # Skip Claude, save costs
+```
+
+### Cost Optimization
+
+| Task | Use Groq | Use Claude |
+|------|----------|------------|
+| Email classification | ✅ | ❌ |
+| Keyword extraction | ✅ | ❌ |
+| Simple summarization | ✅ | ❌ |
+| Complex reasoning | ❌ | ✅ |
+| Code generation | ❌ | ✅ |
+| Multi-step planning | ❌ | ✅ |
 
 ## Architecture
 
