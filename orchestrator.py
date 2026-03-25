@@ -95,25 +95,6 @@ class Orchestrator:
                 self.agent_teams = None
         else:
             self.agent_teams = None
-                logger.info("✅ Multi-CLI system initialized (legacy mode)")
-            except Exception as e:
-                logger.warning(f"Multi-CLI initialization failed: {e}")
-                self.multi_cli = None
-                self.quota_manager = None
-        else:
-            self.multi_cli = None
-            self.quota_manager = None
-
-        # Initialize Agent Teams Manager (NEW)
-        if AGENT_TEAMS_AVAILABLE:
-            try:
-                self.agent_teams = AgentTeamsManager(self.vault_path)
-                logger.info("✅ Agent Teams system initialized")
-            except Exception as e:
-                logger.warning(f"Agent Teams initialization failed: {e}")
-                self.agent_teams = None
-        else:
-            self.agent_teams = None
 
         # Directories
         self.needs_action = self.vault_path / 'Needs_Action'
@@ -171,15 +152,16 @@ class Orchestrator:
             return True
 
         # Check if we should create an agent team for this work
-        if self.agent_teams and self._should_use_agent_team(prompt):
-            return self._process_with_agent_team(prompt)
+        # TEMPORARILY DISABLED - agent teams not spawning actual agents, just creating plans
+        # if self.agent_teams and self._should_use_agent_team(prompt):
+        #     return self._process_with_agent_team(prompt)
 
-        # Use Multi-Provider AI system if available (PREFERRED - maintains Claude Code functionality)
-        if self.multi_provider_ai:
-            return self._process_with_multi_provider_ai(prompt)
-        # Fallback to Multi-CLI system (LEGACY - loses Claude Code functionality)
-        elif self.multi_cli:
+        # Use Multi-CLI manager (Claude CLI) for direct processing (PREFERRED)
+        if self.multi_cli:
             return self._process_with_multi_cli(prompt)
+        # Fallback to Multi-Provider AI system
+        elif self.multi_provider_ai:
+            return self._process_with_multi_provider_ai(prompt)
         else:
             # Final fallback to original API system
             return self._process_with_original_apis(prompt)
@@ -1261,8 +1243,8 @@ _Created by Orchestrator at {datetime.now().isoformat()}_
 
 Items include various types of work that may benefit from parallel processing by specialized teammates."""
 
-                        # Check if this warrants a team approach
-                        if self._should_use_agent_team(batch_prompt):
+                        # Check if this warrants a team approach (DISABLED - teams not spawning agents)
+                        if False and self._should_use_agent_team(batch_prompt):
                             logger.info("🤖 Creating agent team for batch processing")
                             success = self._process_with_agent_team(batch_prompt)
                             if success:
