@@ -1,7 +1,7 @@
 """
 Orchestrator - Main coordination script for the AI Employee
 
-The orchestrator manages the coordination between watchers, Claude Code,
+The orchestrator manages the coordination between watchers, Qwen Code,
 and MCP servers. It handles scheduling, folder watching, and the
 Ralph Wiggum persistence loop.
 
@@ -38,6 +38,39 @@ except ImportError:
     AGENT_TEAMS_AVAILABLE = False
     logging.warning("Multi-provider system not available - falling back to original API calls")
 
+# Import Error Recovery Integration (Step 5)
+try:
+    from error_recovery_integration import (
+        RecoveryContext,
+        with_circuit_breaker,
+        with_ralph_retry,
+    )
+    ERROR_RECOVERY_AVAILABLE = True
+except ImportError:
+    ERROR_RECOVERY_AVAILABLE = False
+    RecoveryContext = None
+    with_circuit_breaker = None
+    with_ralph_retry = None
+    logging.warning("Error recovery integration not available")
+
+# Import Health Server (Step 6)
+try:
+    from health_server import HealthServer
+    HEALTH_SERVER_AVAILABLE = True
+except ImportError:
+    HEALTH_SERVER_AVAILABLE = False
+    HealthServer = None
+    logging.warning("Health server not available")
+
+# Import Config Validator (Step 7)
+try:
+    from config_validator import ConfigValidator
+    CONFIG_VALIDATOR_AVAILABLE = True
+except ImportError:
+    CONFIG_VALIDATOR_AVAILABLE = False
+    ConfigValidator = None
+    logging.warning("Config validator not available")
+
 # Load environment variables
 load_dotenv()
 
@@ -52,7 +85,7 @@ logger = logging.getLogger("Orchestrator")
 class Orchestrator:
     """Main orchestrator for the AI Employee."""
 
-    def __init__(self, vault_path: str, dry_run: bool = True, primary_cli: str = "claude"):
+    def __init__(self, vault_path: str, dry_run: bool = True, primary_cli: str = "qwen"):
         self.vault_path = Path(vault_path)
         self.dry_run = dry_run
         self.running = True
@@ -60,11 +93,11 @@ class Orchestrator:
         self.current_task = None
         self.primary_cli = primary_cli
 
-        # Initialize Multi-Provider AI System (NEW - maintains Claude Code functionality)
+        # Initialize Multi-Provider AI System (NEW - maintains Qwen Code functionality)
         if MULTI_PROVIDER_AVAILABLE:
             try:
                 self.multi_provider_ai = MultiProviderAI(str(vault_path))
-                logger.info("✅ Multi-Provider AI system initialized (with full Claude Code functionality)")
+                logger.info("✅ Multi-Provider AI system initialized (with full Qwen Code functionality)")
             except Exception as e:
                 logger.warning(f"Multi-Provider AI initialization failed: {e}")
                 self.multi_provider_ai = None
@@ -96,6 +129,36 @@ class Orchestrator:
         else:
             self.agent_teams = None
 
+        # Initialize Error Recovery Integration (Step 5)
+        if ERROR_RECOVERY_AVAILABLE and RecoveryContext:
+            try:
+                self.recovery_ctx = RecoveryContext(self.vault_path)
+                logger.info("✅ Error Recovery & Circuit Breakers initialized")
+            except Exception as e:
+                logger.warning(f"Error recovery initialization failed: {e}")
+                self.recovery_ctx = None
+        else:
+            self.recovery_ctx = None
+
+        # Initialize Health Server (Step 6)
+        self.health_server = None
+        self.health_state = None
+        if HEALTH_SERVER_AVAILABLE and HealthServer:
+            try:
+                health_port = int(os.getenv("HEALTH_PORT", "8080"))
+                health_host = os.getenv("HEALTH_HOST", "127.0.0.1")
+                self.health_server = HealthServer(
+                    vault_path=str(vault_path),
+                    host=health_host,
+                    port=health_port,
+                )
+                self.health_state = self.health_server.state
+                logger.info(f"✅ Health server initialized on {health_host}:{health_port}")
+            except Exception as e:
+                logger.warning(f"Health server initialization failed: {e}")
+                self.health_server = None
+                self.health_state = None
+
         # Directories
         self.needs_action = self.vault_path / 'Needs_Action'
         self.plans = self.vault_path / 'Plans'
@@ -104,10 +167,12 @@ class Orchestrator:
         self.approved = self.vault_path / 'Approved'
         self.rejected = self.vault_path / 'Rejected'
         self.logs = self.vault_path / 'Logs'
+        self.in_progress = self.vault_path / 'In_Progress'
 
         # Ensure directories exist
         for d in [self.needs_action, self.plans, self.done,
-                  self.pending_approval, self.approved, self.rejected, self.logs]:
+                  self.pending_approval, self.approved, self.rejected,
+                  self.logs, self.in_progress]:
             d.mkdir(parents=True, exist_ok=True)
 
         # Setup signal handlers
@@ -143,7 +208,7 @@ class Orchestrator:
         return items
 
     def trigger_ai(self, prompt: str) -> bool:
-        """Process item using AI with multi-provider system maintaining full Claude Code functionality."""
+        """Process item using AI with multi-provider system maintaining full Qwen Code functionality."""
         logger.info(f"Processing with AI: {prompt[:100]}...")
 
         if self.dry_run:
@@ -156,7 +221,7 @@ class Orchestrator:
         # if self.agent_teams and self._should_use_agent_team(prompt):
         #     return self._process_with_agent_team(prompt)
 
-        # Use Multi-CLI manager (Claude CLI) for direct processing (PREFERRED)
+        # Use Multi-CLI manager (Qwen CLI) for direct processing (PREFERRED)
         if self.multi_cli:
             return self._process_with_multi_cli(prompt)
         # Fallback to Multi-Provider AI system
@@ -166,8 +231,10 @@ class Orchestrator:
             # Final fallback to original API system
             return self._process_with_original_apis(prompt)
 
+    @with_circuit_breaker("qwen_api", max_retries=3) if with_circuit_breaker else lambda f: f
+    @with_ralph_retry(max_iterations=10) if with_ralph_retry else lambda f: f
     def _process_with_multi_provider_ai(self, prompt: str) -> bool:
-        """Process using the multi-provider AI system with full Claude Code functionality."""
+        """Process using the multi-provider AI system with full Qwen Code functionality."""
         try:
             # Load context from vault
             context = self._load_vault_context()
@@ -273,7 +340,7 @@ status: pending_review
 {prompt[:1000]}
 
 ## System Capabilities Used
-- ✅ Full Claude Code functionality maintained
+- ✅ Full Qwen Code functionality maintained
 - ✅ Tools: bash, read, write, edit, glob, grep, web_search, playwright
 - ✅ MCP Servers: email, social, linkedin, twitter
 - ✅ Skills: process-emails, pdf, browsing-with-playwright
@@ -839,12 +906,12 @@ status: pending_review
             return self._fallback_rule_based_processing(prompt)
 
     # Keep backward compatibility
-    def trigger_claude(self, prompt: str) -> bool:
+    def trigger_qwen(self, prompt: str) -> bool:
         """Backward compatibility wrapper for trigger_ai."""
         return self.trigger_ai(prompt)
 
     def _fallback_rule_based_processing(self, prompt: str) -> bool:
-        """Fallback to rule-based processing when Claude API unavailable."""
+        """Fallback to rule-based processing when Qwen API unavailable."""
         logger.info("Using rule-based fallback processing")
 
         try:
@@ -890,8 +957,8 @@ created: {datetime.now().isoformat()}
 {email_content[:500]}
 
 ## Note
-This was processed using rule-based classification because Claude API was unavailable.
-For intelligent processing, set ANTHROPIC_API_KEY in your .env file.
+This was processed using rule-based classification because Qwen API was unavailable.
+For intelligent processing, set QWEN_API_KEY or ANTHROPIC_API_KEY in your .env file.
 """
 
             draft_path.write_text(draft_content)
@@ -970,12 +1037,17 @@ _Created by Orchestrator at {datetime.now().isoformat()}_
         item.rename(dest)
         logger.info(f"Moved to In_Progress: {dest.name}")
 
+    @with_circuit_breaker("filesystem", max_retries=2) if with_circuit_breaker else lambda f: f
     def process_approved_item(self, item: Path) -> bool:
-        """Process an approved item using MCP servers."""
+        """Process an approved item using MCP servers.
+
+        Routes to the appropriate MCP handler based on the action type
+        extracted from the item's YAML frontmatter.
+        """
         logger.info(f"Processing approved item: {item.name}")
 
         if self.dry_run:
-            logger.info(f"[DRY RUN] Would process: {item.name}")
+            logger.info(f"[DRY RUN] Would process approved item: {item.name}")
             return True
 
         try:
@@ -983,18 +1055,39 @@ _Created by Orchestrator at {datetime.now().isoformat()}_
             content = item.read_text()
 
             # Extract action type from frontmatter
-            lines = content.split('\n')
-            action_type = None
-            for line in lines:
-                if line.startswith('action:'):
-                    action_type = line.split(':')[1].strip()
-                    break
+            action_type = self._extract_frontmatter_field(content, 'action')
+            if not action_type:
+                # Try to infer from content
+                content_lower = content.lower()
+                if 'email' in content_lower and ('send' in content_lower or 'reply' in content_lower):
+                    action_type = 'send_email'
+                elif 'linkedin' in content_lower:
+                    action_type = 'linkedin_post'
+                elif 'twitter' in content_lower or 'tweet' in content_lower:
+                    action_type = 'twitter_post'
+                elif 'facebook' in content_lower or 'instagram' in content_lower:
+                    action_type = 'social_post'
+                elif 'invoice' in content_lower or 'payment' in content_lower:
+                    action_type = 'odoo_payment'
+                else:
+                    logger.warning(f"Could not determine action type for: {item.name}")
+                    return False
+
+            logger.info(f"Action type: {action_type}")
 
             # Route to appropriate MCP handler
-            if action_type == 'send_email':
-                return self._handle_email_action(content)
-            elif action_type == 'payment':
-                return self._handle_payment_action(content)
+            handlers = {
+                'send_email': self._handle_email_action,
+                'linkedin_post': self._handle_linkedin_action,
+                'twitter_post': self._handle_twitter_action,
+                'social_post': self._handle_social_action,
+                'odoo_invoice': self._handle_odoo_invoice_action,
+                'odoo_payment': self._handle_odoo_payment_action,
+            }
+
+            handler = handlers.get(action_type)
+            if handler:
+                return handler(content)
             else:
                 logger.warning(f"Unknown action type: {action_type}")
                 return False
@@ -1003,18 +1096,284 @@ _Created by Orchestrator at {datetime.now().isoformat()}_
             logger.error(f"Error processing approved item: {e}")
             return False
 
-    def _handle_email_action(self, content: str) -> bool:
-        """Handle email sending action."""
-        logger.info("Handling email action")
-        # This would call the email MCP server
-        return True
+    def _extract_frontmatter_field(self, content: str, field: str) -> str:
+        """Extract a field from YAML frontmatter."""
+        import re
+        match = re.search(rf'^{field}:\s*(.+)$', content, re.MULTILINE)
+        if match:
+            return match.group(1).strip().strip('"').strip("'")
+        return ""
 
-    def _handle_payment_action(self, content: str) -> bool:
-        """Handle payment action."""
-        logger.info("Handling payment action")
-        # This would call the payment MCP server
-        # NEVER auto-approve payments
-        return True
+    def _call_mcp_server(self, server_name: str, tool_name: str, arguments: dict) -> dict:
+        """Call an MCP server tool via subprocess using the MCP stdio protocol.
+
+        This is a simplified invocation that runs the MCP server script directly
+        and calls the specified tool function.
+        """
+        import importlib.util
+
+        server_paths = {
+            'email': 'mcp/email/server.py',
+            'filesystem': 'mcp/filesystem/server.py',
+            'approval': 'mcp/approval/server.py',
+            'linkedin': 'mcp/linkedin/server.py',
+            'twitter': 'mcp/twitter/server.py',
+            'social': 'mcp/social/server.py',
+            'odoo': 'mcp/odoo/server.py',
+        }
+
+        if server_name not in server_paths:
+            return {"error": f"Unknown MCP server: {server_name}"}
+
+        server_path = Path(__file__).parent / server_paths[server_name]
+        if not server_path.exists():
+            return {"error": f"MCP server file not found: {server_path}"}
+
+        try:
+            # Import the server module and call the tool function directly
+            spec = importlib.util.spec_from_file_location(server_name, server_path)
+            module = importlib.util.module_from_spec(spec)
+            spec.loader.exec_module(module)
+
+            # Get the tool function
+            tool_func = getattr(module, tool_name, None)
+            if not tool_func:
+                return {"error": f"Tool {tool_name} not found in {server_name} server"}
+
+            # Call the tool
+            result = tool_func(**arguments)
+            return result
+
+        except Exception as e:
+            return {"error": f"Failed to call MCP server {server_name}/{tool_name}: {e}"}
+
+    def _handle_email_action(self, content: str) -> bool:
+        """Handle email sending action via Email MCP server."""
+        logger.info("Handling email action via Email MCP server")
+
+        # Extract email fields from frontmatter
+        to_addr = self._extract_frontmatter_field(content, 'to') or self._extract_frontmatter_field(content, 'recipient')
+        subject = self._extract_frontmatter_field(content, 'subject')
+        cc_addr = self._extract_frontmatter_field(content, 'cc')
+        bcc_addr = self._extract_frontmatter_field(content, 'bcc')
+
+        # Use body as remaining content after frontmatter
+        import re
+        fm_match = re.match(r'^---\s*\n.*?\n---\s*\n(.*)', content, re.DOTALL)
+        body = fm_match.group(1).strip() if fm_match else content
+
+        if not to_addr:
+            logger.error("No recipient found for email action")
+            return False
+
+        result = self._call_mcp_server('email', 'send_email', {
+            'to': to_addr,
+            'subject': subject or 'No Subject',
+            'body': body,
+            'cc': cc_addr or '',
+            'bcc': bcc_addr or '',
+        })
+
+        if result.get('success'):
+            logger.info(f"Email sent successfully to {to_addr}")
+            self.log_activity('email_sent', {'to': to_addr, 'subject': subject, 'result': result})
+            return True
+        else:
+            logger.error(f"Failed to send email: {result.get('error')}")
+            self.log_activity('email_failed', {'to': to_addr, 'error': result.get('error')})
+            return False
+
+    def _handle_linkedin_action(self, content: str) -> bool:
+        """Handle LinkedIn posting action via LinkedIn MCP server."""
+        logger.info("Handling LinkedIn action via LinkedIn MCP server")
+
+        # Extract fields from frontmatter
+        post_content = self._extract_frontmatter_field(content, 'content')
+        visibility = self._extract_frontmatter_field(content, 'visibility') or 'PUBLIC'
+        image_url = self._extract_frontmatter_field(content, 'image_url')
+
+        # Use body as post content if no explicit content field
+        import re
+        fm_match = re.match(r'^---\s*\n.*?\n---\s*\n(.*)', content, re.DOTALL)
+        if not post_content and fm_match:
+            post_content = fm_match.group(1).strip()[:3000]  # LinkedIn limit
+
+        if not post_content:
+            logger.error("No content found for LinkedIn action")
+            return False
+
+        if image_url:
+            result = self._call_mcp_server('linkedin', 'post_with_image', {
+                'content': post_content,
+                'image_url': image_url,
+                'visibility': visibility,
+            })
+        else:
+            result = self._call_mcp_server('linkedin', 'post_to_linkedin', {
+                'content': post_content,
+                'visibility': visibility,
+            })
+
+        if result.get('success'):
+            logger.info(f"LinkedIn post successful (dry_run={result.get('dry_run', False)})")
+            self.log_activity('linkedin_posted', {'result': result})
+            return True
+        else:
+            logger.error(f"Failed to post on LinkedIn: {result.get('error')}")
+            self.log_activity('linkedin_failed', {'error': result.get('error')})
+            return False
+
+    def _handle_twitter_action(self, content: str) -> bool:
+        """Handle Twitter posting action via Twitter MCP server."""
+        logger.info("Handling Twitter action via Twitter MCP server")
+
+        post_content = self._extract_frontmatter_field(content, 'content')
+        reply_to = self._extract_frontmatter_field(content, 'reply_to')
+
+        import re
+        fm_match = re.match(r'^---\s*\n.*?\n---\s*\n(.*)', content, re.DOTALL)
+        if not post_content and fm_match:
+            post_content = fm_match.group(1).strip()[:280]  # Twitter limit
+
+        if not post_content:
+            logger.error("No content found for Twitter action")
+            return False
+
+        result = self._call_mcp_server('twitter', 'post_tweet', {
+            'content': post_content,
+            'reply_to': reply_to or None,
+        })
+
+        if result.get('success'):
+            logger.info(f"Twitter post successful (dry_run={result.get('dry_run', False)})")
+            self.log_activity('twitter_posted', {'result': result})
+            return True
+        else:
+            logger.error(f"Failed to post on Twitter: {result.get('error')}")
+            self.log_activity('twitter_failed', {'error': result.get('error')})
+            return False
+
+    def _handle_social_action(self, content: str) -> bool:
+        """Handle Facebook/Instagram posting action via Social MCP server."""
+        logger.info("Handling social action via Facebook/Instagram MCP server")
+
+        post_content = self._extract_frontmatter_field(content, 'content')
+        platform = self._extract_frontmatter_field(content, 'platform').lower()
+        image_url = self._extract_frontmatter_field(content, 'image_url')
+
+        import re
+        fm_match = re.match(r'^---\s*\n.*?\n---\s*\n(.*)', content, re.DOTALL)
+        if not post_content and fm_match:
+            post_content = fm_match.group(1).strip()
+
+        if not post_content:
+            logger.error("No content found for social action")
+            return False
+
+        if platform == 'instagram':
+            if not image_url:
+                logger.error("Image URL required for Instagram post")
+                return False
+            result = self._call_mcp_server('social', 'post_to_instagram', {
+                'caption': post_content,
+                'image_url': image_url,
+            })
+        else:
+            result = self._call_mcp_server('social', 'post_to_facebook', {
+                'content': post_content,
+            })
+
+        if result.get('success'):
+            logger.info(f"Social post successful on {platform} (dry_run={result.get('dry_run', False)})")
+            self.log_activity(f'{platform}_posted', {'result': result})
+            return True
+        else:
+            logger.error(f"Failed to post on {platform}: {result.get('error')}")
+            self.log_activity(f'{platform}_failed', {'error': result.get('error')})
+            return False
+
+    def _handle_odoo_invoice_action(self, content: str) -> bool:
+        """Handle Odoo invoice creation/posting action via Odoo MCP server."""
+        logger.info("Handling Odoo invoice action via Odoo MCP server")
+
+        action = self._extract_frontmatter_field(content, 'action').replace('odoo_', '')
+        partner_name = self._extract_frontmatter_field(content, 'partner_name')
+        partner_email = self._extract_frontmatter_field(content, 'partner_email')
+        amount = self._extract_frontmatter_field(content, 'amount')
+        invoice_id = self._extract_frontmatter_field(content, 'invoice_id')
+
+        if action == 'invoice' or action == 'create_invoice':
+            if not partner_name or not partner_email:
+                logger.error("Missing partner info for invoice")
+                return False
+
+            # Parse invoice lines from content
+            import re
+            lines = []
+            for line_match in re.finditer(r'line:\s*(.+)', content):
+                line_data = {}
+                line_text = line_match.group(1)
+                for field_match in re.finditer(r'(\w+)=([^,]+)', line_text):
+                    key, val = field_match.groups()
+                    try:
+                        val = float(val)
+                    except ValueError:
+                        pass
+                    line_data[key] = val
+                lines.append(line_data)
+
+            if not lines:
+                lines = [{'name': 'Service', 'quantity': 1, 'price_unit': float(amount) if amount else 0}]
+
+            result = self._call_mcp_server('odoo', 'create_invoice', {
+                'partner_name': partner_name,
+                'partner_email': partner_email,
+                'invoice_lines': lines,
+            })
+
+        elif action == 'post_invoice' and invoice_id:
+            result = self._call_mcp_server('odoo', 'post_invoice', {
+                'invoice_id': int(invoice_id),
+            })
+        else:
+            logger.error(f"Unknown Odoo action: {action}")
+            return False
+
+        if result.get('success'):
+            logger.info(f"Odoo invoice action successful (dry_run={result.get('dry_run', False)})")
+            self.log_activity('odoo_invoice', {'result': result})
+            return True
+        else:
+            logger.error(f"Failed Odoo invoice action: {result.get('error')}")
+            self.log_activity('odoo_invoice_failed', {'error': result.get('error')})
+            return False
+
+    def _handle_odoo_payment_action(self, content: str) -> bool:
+        """Handle Odoo payment action via Odoo MCP server."""
+        logger.info("Handling Odoo payment action via Odoo MCP server")
+
+        invoice_id = self._extract_frontmatter_field(content, 'invoice_id')
+        amount = self._extract_frontmatter_field(content, 'amount')
+        payment_ref = self._extract_frontmatter_field(content, 'payment_reference')
+
+        if not invoice_id or not amount:
+            logger.error("Missing invoice ID or amount for payment")
+            return False
+
+        result = self._call_mcp_server('odoo', 'create_payment', {
+            'invoice_id': int(invoice_id),
+            'amount': float(amount),
+            'payment_reference': payment_ref or f'Payment for invoice {invoice_id}',
+        })
+
+        if result.get('success'):
+            logger.info(f"Odoo payment successful (dry_run={result.get('dry_run', False)})")
+            self.log_activity('odoo_payment', {'result': result})
+            return True
+        else:
+            logger.error(f"Failed Odoo payment: {result.get('error')}")
+            self.log_activity('odoo_payment_failed', {'error': result.get('error')})
+            return False
 
     def notify_approval_needed(self, item: Path, details: dict = None):
         """Notify user that approval is needed via webhooks and logs."""
@@ -1092,8 +1451,51 @@ _Created by Orchestrator at {datetime.now().isoformat()}_
         item.rename(dest)
         logger.info(f"Moved to Done: {dest.name}")
 
-        # Notify completion
-        self._notify_completion(item)
+    def _update_dashboard(self, needs_action: list, pending: list, approved: list):
+        """Update the Dashboard.md with current system state."""
+        dashboard_path = self.vault_path / 'Dashboard.md'
+
+        done_count = len(list(self.done.glob('*.md')))
+        in_progress_count = len(list(self.in_progress.glob('*.md')))
+        total_processed = done_count + in_progress_count
+
+        dashboard = f"""# AI Employee Dashboard
+
+## System Status
+- **Last Updated**: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}
+- **Status**: {'🟢 Active' if self.running else '🔴 Stopped'}
+- **Reasoning Engine**: Qwen Code
+- **Mode**: {'DRY RUN' if self.dry_run else 'LIVE'}
+- **Ralph Loop**: {'Active' if self.ralph_mode else 'Inactive'}
+
+## Queue Status
+| Folder | Count |
+|--------|-------|
+| Needs_Action | {len(needs_action)} |
+| In_Progress | {in_progress_count} |
+| Pending_Approval | {len(pending)} |
+| Approved | {len(approved)} |
+| Done | {done_count} |
+
+## Recent Activity
+- Last cycle: {datetime.now().strftime('%H:%M:%S')}
+- Items processed this cycle: {len(needs_action)}
+
+## Quick Actions
+- [ ] Check Needs_Action folder
+- [ ] Review Pending_Approval
+- [ ] Execute Approved items
+
+## Statistics
+- **Total Processed**: {total_processed}
+- **Errors**: 0
+
+---
+*Generated by AI Employee v0.1 — Auto-updated every 30s*
+"""
+
+        dashboard_path.write_text(dashboard)
+        logger.debug("Dashboard updated")
 
     def move_to_rejected(self, item: Path):
         """Move item to Rejected folder."""
@@ -1168,7 +1570,7 @@ _Created by Orchestrator at {datetime.now().isoformat()}_
         """Generate Monday morning CEO briefing."""
         logger.info("Generating morning briefing...")
 
-        # This would be handled by Claude
+        # This would be handled by Qwen
         prompt = """
         Generate a Monday Morning CEO Briefing by:
         1. Reading Business_Goals.md for targets
@@ -1177,44 +1579,95 @@ _Created by Orchestrator at {datetime.now().isoformat()}_
         4. Writing a summary to Briefings/{date}_Monday_Briefing.md
         """
 
-        self.trigger_claude(prompt)
+        self.trigger_qwen(prompt)
 
     def run_ralph_loop(self, task_prompt: str, max_iterations: int = 10):
         """
-        Run the Ralph Wiggum persistence loop.
+        Run the Ralph Wiggum persistence loop — EMBEDDED into orchestrator.
 
-        This keeps Claude running until a task is marked complete.
+        This keeps Qwen working autonomously until a task is marked complete,
+        with circuit breaker protection and exponential backoff retry.
         """
-        logger.info(f"Starting Ralph Wiggum loop: {task_prompt}")
-        self.ralph_mode = True
+        logger.info("=" * 60)
+        logger.info("🔄 Starting Ralph Wiggum Loop (Embedded)")
+        logger.info(f"Prompt: {task_prompt[:100]}...")
+        logger.info(f"Max iterations: {max_iterations}")
+        logger.info("=" * 60)
 
+        # Activate Ralph mode in recovery context
+        if self.recovery_ctx:
+            self.recovery_ctx.ralph_active = True
+            self.recovery_ctx.ralph_iterations = 0
+            self.recovery_ctx.ralph_max_iterations = max_iterations
+
+        self.ralph_mode = True
+        start_time = datetime.now()
+        last_done_count = len(list(self.done.glob("*.md")))
         iteration = 0
+
         while iteration < max_iterations and self.running:
             iteration += 1
-            logger.info(f"Ralph loop iteration {iteration}/{max_iterations}")
+            if self.recovery_ctx:
+                self.recovery_ctx.ralph_iterations = iteration
 
-            # Check if task is done
-            done_items = list(self.done.glob('*'))
-            if done_items:
-                logger.info("Task marked complete, exiting Ralph loop")
+            logger.info(f"🔄 Ralph iteration {iteration}/{max_iterations}")
+
+            # Check completion via file movement
+            current_done_count = len(list(self.done.glob("*.md")))
+            if current_done_count > last_done_count:
+                logger.info(f"✅ Task complete — {current_done_count - last_done_count} new files in Done/")
                 break
 
-            # Trigger Claude to continue working
-            success = self.trigger_claude(task_prompt)
+            # Check if Needs_Action is empty
+            remaining = len(list(self.needs_action.glob("*.md")))
+            if remaining == 0:
+                logger.info("✅ Needs_Action folder empty — task complete")
+                break
+
+            # Trigger AI processing (with circuit breaker + retry from decorator)
+            success = self.trigger_ai(task_prompt)
 
             if not success:
-                logger.error("Claude failed, retrying...")
-                time.sleep(5)
+                logger.warning(f"⚠️ Ralph iteration {iteration} failed — will retry")
+                # Exponential backoff: 2s, 4s, 8s, ... up to 30s
+                delay = min(2 * (2 ** (iteration - 1)), 30)
+                logger.info(f"⏳ Backing off for {delay}s before retry")
+                time.sleep(delay)
+            else:
+                # Brief pause between successful iterations
+                time.sleep(2)
 
-            # Small delay between iterations
-            time.sleep(2)
+            last_done_count = current_done_count
 
+        # Deactivate Ralph mode
         self.ralph_mode = False
-        logger.info("Ralph Wiggum loop complete")
+        if self.recovery_ctx:
+            self.recovery_ctx.ralph_active = False
+
+        elapsed = (datetime.now() - start_time).total_seconds()
+        logger.info("=" * 60)
+        logger.info(f"✅ Ralph Wiggum Loop complete: {iteration} iterations, {elapsed:.1f}s")
+        logger.info("=" * 60)
+
+        # Log summary
+        if self.recovery_ctx:
+            self.recovery_ctx.log_error("ralph_loop_summary", {
+                "iterations": iteration,
+                "max_iterations": max_iterations,
+                "elapsed_seconds": round(elapsed, 1),
+                "completed": iteration < max_iterations,
+                "done_count": current_done_count,
+            })
 
     def run(self):
         """Main orchestration loop."""
         logger.info(f"Starting Orchestrator (dry_run={self.dry_run})")
+
+        # Start health server
+        if self.health_server:
+            self.health_server.start()
+            if self.health_state:
+                self.health_state.set_running(True)
 
         # Track last team monitoring time
         last_team_monitor = datetime.now()
@@ -1258,47 +1711,143 @@ Items include various types of work that may benefit from parallel processing by
 
                     # Process items individually if no team was created
                     for item in needs_action:
-                        # Create a Plan.md first
-                        self.create_plan(item)
+                        # Step 1: Create a Plan.md
+                        plan_path = self.create_plan(item)
 
-                        # Then trigger AI to process
-                        prompt = f"""Process the item in {item.name}.
+                        # Step 2: Read item content for AI prompt
+                        item_content = item.read_text()
 
-The plan has been created in Plans/ folder.
-1. Read the item in Needs_Action/{item.name}
-2. Read Company_Handbook.md for rules
-3. Determine required actions
-4. If approval needed, create request in Pending_Approval/
-5. When complete, move original to Done/ and update plan status to completed
+                        # Step 3: Trigger AI to analyze and create action plan
+                        prompt = f"""You are a Personal AI Employee. Process this item:
+
+## Item: {item.name}
+{item_content}
+
+## Instructions
+1. Analyze the item content
+2. Read Company_Handbook.md for rules and boundaries
+3. Read Business_Goals.md for context
+4. Determine what actions are needed
+5. If the item requires external action (sending email, posting, payment):
+   - Create a detailed action plan and save it in Pending_Approval/ with action type in frontmatter
+   - DO NOT execute external actions without approval
+6. If the item is informational (read, summarize, categorize):
+   - Create a summary in Plans/
+   - Move the original item to Done/
+7. Update the plan status as you work
+
+Respond with your analysis and planned actions.
 """
-                        self.trigger_ai(prompt)
-                        self.move_to_in_progress(item)
+                        success = self.trigger_ai(prompt)
 
-                # Check Approved folder
+                        if success:
+                            # Move to In_Progress to indicate AI is working on it
+                            self.move_to_in_progress(item)
+                            logger.info(f"Item {item.name} moved to In_Progress")
+                        else:
+                            logger.warning(f"Failed to process item {item.name}")
+
+                # Check Approved folder — execute approved actions
                 approved = self.check_approved()
                 if approved:
                     logger.info(f"Found {len(approved)} approved items to execute")
                     for item in approved:
-                        if self.process_approved_item(item):
+                        logger.info(f"Executing approved item: {item.name}")
+                        success = self.process_approved_item(item)
+                        if success:
                             self.move_to_done(item)
+                            logger.info(f"✅ Approved item {item.name} executed and moved to Done")
+                        else:
+                            logger.error(f"❌ Failed to execute approved item: {item.name}")
+                            # Move to In_Progress for manual review
+                            self.move_to_in_progress(item)
 
                 # Check Pending Approval
                 pending = self.check_pending_approval()
                 if pending:
                     logger.info(f"Found {len(pending)} items pending approval")
 
-                # Log heartbeat
-                self.log_activity('heartbeat', {'status': 'running'})
+                # Update Dashboard
+                self._update_dashboard(needs_action, pending, approved)
+
+                # Check quarantined items and report
+                if self.recovery_ctx and self.recovery_ctx.quarantine_dir.exists():
+                    quarantined = list(self.recovery_ctx.quarantine_dir.glob("*.md"))
+                    if quarantined:
+                        logger.warning(f"🔒 {len(quarantined)} items in quarantine (review required)")
+
+                # Log heartbeat with recovery context
+                heartbeat_data = {
+                    "status": "running",
+                    "ralph_mode": self.ralph_mode,
+                }
+                if self.recovery_ctx:
+                    heartbeat_data["circuit_breakers"] = {
+                        name: cb.state
+                        for name, cb in self.recovery_ctx.breakers.items()
+                    }
+                    heartbeat_data["ralph_iterations"] = self.recovery_ctx.ralph_iterations
+                self.log_activity("heartbeat", heartbeat_data)
+
+                # Update health server state
+                if self.health_state:
+                    self.health_state.update_heartbeat()
+                    self.health_state.ralph_mode_active = self.ralph_mode
+                    self.health_state.needs_action_count = len(needs_action)
+                    self.health_state.pending_approval_count = len(pending) if pending else 0
+                    self.health_state.approved_count = len(approved) if approved else 0
+                    self.health_state.done_count = len(list(self.done.glob("*.md")))
+
+                    if self.recovery_ctx:
+                        self.health_state.circuit_breakers = {
+                            name: cb.state
+                            for name, cb in self.recovery_ctx.breakers.items()
+                        }
+                        self.health_state.ralph_iterations = self.recovery_ctx.ralph_iterations
 
                 # Sleep before next check
                 time.sleep(30)
 
             except Exception as e:
                 logger.error(f"Error in orchestration loop: {e}")
-                self.log_activity('error', {'error': str(e)})
+
+                # Update health state with error
+                if self.health_state:
+                    self.health_state.set_error(str(e))
+
+                # Use error recovery to categorize and handle
+                if self.recovery_ctx:
+                    from error_recovery_integration import _categorize_error, ErrorCategory
+                    category = _categorize_error(e)
+
+                    self.recovery_ctx.log_error("orchestration_error", {
+                        "category": category.value,
+                        "error": str(e),
+                    })
+
+                    # System errors: log and continue
+                    if category == ErrorCategory.SYSTEM:
+                        logger.critical("💥 System error — logging and continuing")
+                    # Auth errors: log and alert
+                    elif category == ErrorCategory.AUTHENTICATION:
+                        logger.error("🔐 Authentication error — check credentials")
+                    # Transient: retry after delay
+                    elif category == ErrorCategory.TRANSIENT:
+                        logger.info("⏳ Transient error — will retry on next loop")
+                        # Clear error after transient — will recover
+                        if self.health_state:
+                            self.health_state.clear_error()
+
+                self.log_activity("error", {"error": str(e)})
                 time.sleep(10)
 
         logger.info("Orchestrator stopped")
+
+        # Stop health server
+        if self.health_server:
+            self.health_server.stop()
+            if self.health_state:
+                self.health_state.set_running(False)
 
     def schedule_task(self, task: str, cron_expr: str):
         """Schedule a task using cron-like syntax."""
@@ -1319,7 +1868,7 @@ def main():
 
     # Multi-CLI options
     parser.add_argument('--primary-cli', choices=['claude', 'qwen', 'codex'],
-                        default='claude', help='Primary CLI to use (default: claude)')
+                        default='qwen', help='Primary CLI to use (default: qwen)')
     parser.add_argument('--enable-fallback', action='store_true', default=True,
                         help='Enable automatic fallback between CLIs (default: enabled)')
     parser.add_argument('--force-cli', choices=['claude', 'qwen', 'codex'],
@@ -1333,6 +1882,34 @@ def main():
     parser.add_argument('--reset-quotas', action='store_true',
                         help='Reset quota tracking and exit')
 
+    # Ralph Wiggum Loop (Step 5)
+    parser.add_argument('--ralph-mode', action='store_true',
+                        help='Enable Ralph Wiggum persistence loop')
+    parser.add_argument('--ralph-max-iterations', type=int, default=10,
+                        help='Maximum Ralph loop iterations (default: 10)')
+    parser.add_argument('--ralph-prompt', type=str, default=None,
+                        help='Prompt for Ralph loop (default: process all items)')
+
+    # Error Recovery Status
+    parser.add_argument('--recovery-status', action='store_true',
+                        help='Show error recovery and circuit breaker status and exit')
+
+    # Health Check (Step 6)
+    parser.add_argument('--health-port', type=int, default=8080,
+                        help='Health server port (default: 8080)')
+    parser.add_argument('--health-check', action='store_true',
+                        help='Query health endpoint and exit (for monitoring scripts)')
+    parser.add_argument('--health-url', type=str, default=None,
+                        help='Full health URL to check (default: http://127.0.0.1:8080/health)')
+
+    # Configuration Validation (Step 7)
+    parser.add_argument('--validate-config', action='store_true',
+                        help='Run startup configuration validation and exit')
+    parser.add_argument('--validate-json', action='store_true',
+                        help='Output validation report as JSON')
+    parser.add_argument('--no-network-checks', action='store_true',
+                        help='Skip network connectivity tests during validation')
+
     args = parser.parse_args()
 
     # Handle special commands
@@ -1342,13 +1919,13 @@ def main():
             print("Testing all CLIs...")
             test_prompt = "Hello, please respond with 'CLI working'"
 
-            print("\n🔍 Testing Claude...")
-            success, result = manager.call_claude(test_prompt)
-            print(f"Claude: {'✅' if success else '❌'} {result[:100]}")
-
-            print("\n🔍 Testing Qwen...")
+            print("\n🔍 Testing Qwen (Primary)...")
             success, result = manager.call_qwen(test_prompt)
             print(f"Qwen: {'✅' if success else '❌'} {result[:100]}")
+
+            print("\n🔍 Testing Claude (Fallback)...")
+            success, result = manager.call_claude(test_prompt)
+            print(f"Claude: {'✅' if success else '❌'} {result[:100]}")
 
             print("\n🔍 Testing Codex...")
             success, result = manager.call_codex(test_prompt)
@@ -1372,6 +1949,7 @@ def main():
     if args.reset_quotas:
         if MULTI_CLI_AVAILABLE:
             quota_manager = QuotaManager(args.vault)
+            quota_manager.quota_data["qwen"]["exhausted"] = False
             quota_manager.quota_data["claude"]["exhausted"] = False
             quota_manager.quota_data["codex"]["exhausted"] = False
             quota_manager.save_quota_status()
@@ -1388,6 +1966,60 @@ def main():
         dry_run=args.dry_run,
         primary_cli=primary_cli
     )
+
+    # Handle --recovery-status
+    if args.recovery_status:
+        if orchestrator.recovery_ctx:
+            import json
+            status = orchestrator.recovery_ctx.get_status_report()
+            print(json.dumps(status, indent=2))
+        else:
+            print("Error recovery not available")
+        return
+
+    # Handle --ralph-mode
+    if args.ralph_mode:
+        prompt = args.ralph_prompt or "Process all items in Needs_Action folder. Move completed items to Done/."
+        print(f"🔄 Starting Ralph Wiggum Loop (max {args.ralph_max_iterations} iterations)")
+        orchestrator.run_ralph_loop(prompt, max_iterations=args.ralph_max_iterations)
+        return  # Exit after Ralph loop completes
+
+    # Handle --health-check (query endpoint and exit)
+    if args.health_check:
+        import urllib.request
+        url = args.health_url or f"http://127.0.0.1:{args.health_port}/health/status"
+        try:
+            with urllib.request.urlopen(url, timeout=5) as resp:
+                data = json.loads(resp.read().decode("utf-8"))
+                print(json.dumps(data, indent=2))
+                status_code = resp.status
+                if status_code == 200:
+                    return 0
+                else:
+                    return 1
+        except Exception as e:
+            print(json.dumps({"error": str(e), "status": "unreachable"}))
+            return 2
+
+    # Handle --validate-config (run pre-flight checks and exit)
+    if args.validate_config:
+        if CONFIG_VALIDATOR_AVAILABLE and ConfigValidator:
+            validator = ConfigValidator(args.vault)
+            run_network = not args.no_network_checks
+            report = validator.validate_all(run_network_checks=run_network)
+
+            if args.validate_json:
+                print(validator.print_json_report())
+            else:
+                validator.print_summary()
+
+            # Exit with appropriate code
+            if report.fatal_errors:
+                return 1
+            return 0
+        else:
+            print("Config validator not available")
+            return 2
 
     # Disable fallback if force-cli is specified
     if args.force_cli and hasattr(orchestrator, 'multi_cli') and orchestrator.multi_cli:

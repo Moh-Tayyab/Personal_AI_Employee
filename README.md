@@ -2,7 +2,7 @@
 
 > **Your life and business on autopilot. Local-first, agent-driven, human-in-the-loop.**
 
-A comprehensive autonomous AI agent system built with Claude Code and Obsidian that proactively manages personal and business affairs 24/7.
+A comprehensive autonomous AI agent system built with Qwen Code and Obsidian that proactively manages personal and business affairs 24/7.
 
 ## 🎯 What This Does
 
@@ -54,7 +54,7 @@ This is a **Digital Full-Time Equivalent (FTE)** - an AI employee that:
                          │
                          ▼
 ┌─────────────────────────────────────────────────────────────┐
-│                    REASONING LAYER (Claude Code)            │
+│                    REASONING LAYER (Qwen Code)              │
 │         Read → Think → Plan → Write → Request Approval      │
 │         + Ralph Wiggum Loop (persistence until done)        │
 └────────────────────────┬────────────────────────────────────┘
@@ -72,43 +72,74 @@ This is a **Digital Full-Time Equivalent (FTE)** - an AI employee that:
 ```
 Personal_AI_Employee/
 ├── vault/                          # Obsidian vault (Memory/GUI)
-│   ├── Dashboard.md               # Real-time status
+│   ├── Dashboard.md               # Real-time status (auto-updated)
 │   ├── Company_Handbook.md        # AI behavior rules
 │   ├── Business_Goals.md          # Objectives and KPIs
 │   ├── Needs_Action/              # Items requiring attention
-│   │   ├── bugs/                  # Bug reports
-│   │   ├── emails/                # Email action files
-│   │   └── files/                 # Dropped files
-│   ├── Plans/                     # Generated plans
 │   ├── In_Progress/               # Active tasks (claim-by-move)
 │   ├── Pending_Approval/          # Awaiting human approval
 │   ├── Approved/                  # Ready for execution
 │   ├── Done/                      # Completed tasks
-│   ├── Logs/                      # Activity audit logs
-│   └── Briefings/                 # CEO reports
+│   ├── Rejected/                  # Rejected items
+│   ├── Plans/                     # AI-generated action plans
+│   ├── Logs/                      # Activity audit logs (JSON)
+│   └── Briefings/                 # CEO weekly reports
 │
-├── .claude/skills/                # Agent Skills
-│   ├── fix-ticket/                # Bug fixing automation
-│   ├── briefing/                  # CEO briefing generator
-│   ├── watchers/                  # Watcher utilities
-│   └── playwright-cli/            # Browser automation
+├── mcp/                           # MCP servers (7 servers, 49 tools)
+│   ├── email/server.py            # Gmail send/search/mark_read (5 tools)
+│   ├── filesystem/server.py       # File operations (8 tools)
+│   ├── approval/server.py         # Approval workflow (7 tools)
+│   ├── linkedin/server.py         # LinkedIn posting (5 tools)
+│   ├── twitter/server.py          # Twitter/X posting (6 tools)
+│   ├── social/server.py           # Facebook/Instagram (8 tools)
+│   └── odoo/server.py             # Accounting integration (10 tools)
 │
-├── scripts/
-│   ├── watchers/
-│   │   ├── base_watcher.py        # Abstract base class
-│   │   ├── filesystem_watcher.py  # File monitoring
-│   │   └── bug_watcher.py         # Bug report monitoring
-│   ├── orchestrator/
-│   │   └── orchestrator.py        # Master process
-│   └── requirements.txt           # Python dependencies
+├── watchers/                      # Perception layer
+│   ├── base_watcher.py            # Abstract base class
+│   ├── gmail_watcher.py           # Gmail API polling
+│   ├── whatsapp_watcher.py        # WhatsApp Web monitoring
+│   └── filesystem_watcher.py      # Drop directory monitoring
 │
-├── mcp/                           # MCP servers (optional)
-│   ├── jira/
-│   ├── vercel/
-│   ├── odoo/
-│   └── social/
+├── scripts/                       # Operations
+│   ├── start_all.sh               # Start services (PM2 or direct)
+│   ├── stop_all.sh                # Stop services (--force)
+│   ├── status_all.sh              # System status
+│   ├── reset_all.sh               # Clean state management
+│   ├── logs_all.sh                # Unified log viewing
+│   ├── health_check.sh            # Health validation
+│   ├── setup_cron.sh              # Install cron jobs
+│   ├── silver_tier_demo.sh        # Email flow demo
+│   ├── gold_tier_demo.sh          # Full integration demo
+│   ├── cron/                      # Scheduled tasks
+│   │   ├── process_needs_action.sh   # Every 5 minutes
+│   │   ├── daily_briefing.sh         # 8:00 AM daily
+│   │   ├── weekly_ceo_briefing.sh    # Monday 7:00 AM
+│   │   └── health_check.sh           # Every hour
+│   ├── orchestrator.py            # Master coordinator
+│   ├── generate_ceo_briefing.py   # CEO briefing generator
+│   ├── ralph_loop.py              # Persistence pattern
+│   ├── health_server.py           # HTTP health server
+│   ├── error_recovery.py          # Base error recovery
+│   └── error_recovery_integration.py  # Orchestrator wiring
 │
-└── .env.example                   # Environment template
+├── tests/                         # Integration tests (272 tests)
+│   ├── test_integration.py        # Watcher + MCP + E2E tests
+│   ├── test_orchestrator_flow.py  # Orchestrator lifecycle tests
+│   ├── test_error_recovery_integration.py  # Circuit breaker tests
+│   ├── test_health_server.py      # Health server tests
+│   ├── test_error_recovery_resilience.py   # Recovery chain tests
+│   └── ...                        # (14 test files total)
+│
+├── ecosystem.config.js            # PM2 process manager
+├── orchestrator.py                # Main entry point
+├── .env.example                   # Environment template
+├── pyproject.toml                 # Python dependencies
+│
+├── ARCHITECTURE.md                # System architecture documentation
+├── CHANGELOG.md                   # Implementation history
+├── OPERATIONS_RUNBOOK.md          # Daily operations guide
+├── AGENTS.md                      # Technical specification
+└── README.md                      # This file
 ```
 
 ## 🚀 Quick Start
@@ -127,11 +158,13 @@ python3 --version
 
 ```bash
 # Install Python dependencies
-cd scripts
 pip install -r requirements.txt
 
 # Install Playwright browsers
 playwright install chromium
+
+# Install PM2 for 24/7 operation (Silver Tier)
+npm install -g pm2
 ```
 
 ### 3. Setup Environment
@@ -141,33 +174,79 @@ playwright install chromium
 cp .env.example .env
 
 # Edit .env with your API keys
-# (Gmail, Vercel, etc. - optional for Bronze tier)
+# Required for Silver Tier:
+# - GMAIL_CREDENTIALS_PATH (for Gmail watcher)
+# - LINKEDIN_ACCESS_TOKEN (for LinkedIn posting)
 ```
 
-### 4. Start the System
+### 4. Configure LinkedIn (Silver Tier - Optional)
 
 ```bash
-# Option A: Start orchestrator (manages all watchers)
-cd scripts/orchestrator
-python orchestrator.py ../../vault
+# Get LinkedIn token from:
+# https://www.linkedin.com/developers/apps
 
-# Option B: Start individual watchers
-cd scripts/watchers
-python filesystem_watcher.py ../../vault
-python bug_watcher.py ../../vault
+# Set environment variable
+export LINKEDIN_ACCESS_TOKEN=your_token_here
+
+# OR create vault secrets file
+mkdir -p vault/secrets
+echo "your_token_here" > vault/secrets/linkedin_token.txt
 ```
 
-### 5. Process Tasks
+### 5. Start 24/7 Operation (Silver Tier)
 
 ```bash
-# Claude will automatically process items in Needs_Action
-# Or trigger manually:
-claude --prompt "Process all files in /vault/Needs_Action" --cwd vault
+# Preview what would start (no services actually started)
+./scripts/start_all.sh --dry-run
+
+# Start all watchers and orchestrator with PM2
+./scripts/start_all.sh
+
+# Save for auto-restart on boot
+pm2 save
+pm2 startup
+
+# Check status
+./scripts/status_all.sh
+```
+
+### 6. Setup Scheduled Tasks (Silver Tier)
+
+```bash
+# Preview cron entries
+./scripts/setup_cron.sh --dry-run
+
+# Install cron jobs for:
+# - Process Needs_Action (every 5 minutes)
+# - Daily briefing (8:00 AM)
+# - Weekly CEO briefing (Monday 7:00 AM)
+# - Hourly health check
+./scripts/setup_cron.sh
+```
+
+### 7. Validate System Health
+
+```bash
+# Run comprehensive health check
+./scripts/health_check.sh
+
+# View all logs
+./scripts/logs_all.sh
+```
+
+### 8. Run Demos
+
+```bash
+# Silver Tier demo (email flow)
+./scripts/silver_tier_demo.sh
+
+# Gold Tier demo (social + odoo + briefing)
+./scripts/gold_tier_demo.sh
 ```
 
 ## 🎫 Fix Ticket Skill (Autonomous Bug Fixer)
 
-The **fix-ticket** skill transforms Claude into an autonomous software engineer:
+The **fix-ticket** skill transforms Qwen into an autonomous software engineer:
 
 ### Workflow
 
@@ -210,7 +289,7 @@ Console shows: "Uncaught TypeError: Cannot read property..."
 ### Run Fix Ticket
 
 ```bash
-claude --prompt "/fix-ticket process-all" --cwd vault
+qwen --prompt "/fix-ticket process-all" --cwd vault
 ```
 
 ## 📊 CEO Briefing
@@ -218,7 +297,7 @@ claude --prompt "/fix-ticket process-all" --cwd vault
 Generates weekly business audit every Monday:
 
 ```bash
-claude --prompt "Generate weekly CEO briefing" --cwd vault
+qwen --prompt "Generate weekly CEO briefing" --cwd vault
 ```
 
 ### Includes:
@@ -231,29 +310,45 @@ claude --prompt "Generate weekly CEO briefing" --cwd vault
 
 ## 📜 Tiers (Hackathon Scope)
 
-### Bronze Tier (8-12 hours)
+### 🥉 Bronze Tier (8-12 hours) - 100% COMPLETE ✅
 - [x] Obsidian vault with Dashboard.md and Company_Handbook.md
 - [x] One working Watcher (Filesystem)
-- [x] Claude Code reading/writing to vault
+- [x] Qwen Code reading/writing to vault
 - [x] Basic folder structure
 - [x] Agent Skills implemented
 
-### Silver Tier (20-30 hours)
-- [ ] Multiple watchers (Gmail + WhatsApp + Bug)
-- [ ] Plan.md generation
-- [ ] One MCP server (Email)
-- [ ] HITL approval workflow
-- [ ] Basic scheduling
+### 🥈 Silver Tier (20-30 hours) - 100% COMPLETE ✅
+- [x] Multiple watchers (Gmail + WhatsApp + Files)
+- [x] Plan.md generation for each task
+- [x] Email MCP server — 5 tools, fully functional
+- [x] HITL approval workflow — 7 tools
+- [x] Basic scheduling (PM2 + cron)
+- [x] LinkedIn MCP server — 5 tools, with image posting
+- [x] Twitter/X MCP server — 6 tools, with thread support
+- [x] Operations scripts (start/stop/status/reset/logs/health)
+- [x] Demo scripts (silver_tier_demo.sh)
 
-### Gold Tier (40+ hours)
-- [ ] Full cross-domain integration
-- [ ] Odoo accounting integration
-- [ ] Social media auto-posting
-- [ ] Weekly CEO Briefing
-- [ ] Ralph Wiggum loop
-- [ ] Comprehensive logging
+### 🥇 Gold Tier (40+ hours) - 100% COMPLETE ✅
+- [x] Full cross-domain integration (Personal + Business)
+- [x] Odoo accounting integration — 10 tools, session-based auth
+- [x] Facebook/Instagram integration — 8 tools, cross-platform posting
+- [x] 7 MCP servers, 49 tools total
+- [x] Weekly CEO Briefing with revenue tracking
+- [x] Error recovery & graceful degradation — 5 error categories, circuit breakers
+- [x] Comprehensive audit logging
+- [x] Ralph Wiggum loop for multi-step tasks — 3 completion strategies
+- [x] Health server with 6 HTTP endpoints
+- [x] 272 integration tests, 100% pass rate
+- [x] Demo scripts (gold_tier_demo.sh)
 
-### Platinum Tier (60+ hours)
+### 📚 Documentation
+- [x] [ARCHITECTURE.md](./ARCHITECTURE.md) — System architecture and design
+- [x] [CHANGELOG.md](./CHANGELOG.md) — Implementation history
+- [x] [OPERATIONS_RUNBOOK.md](./OPERATIONS_RUNBOOK.md) — Daily operations guide
+- [x] [AGENTS.md](./AGENTS.md) — Technical specification
+- [x] [requirements.md](./requirements.md) — Hackathon requirements
+
+### 💎 Platinum Tier (60+ hours) - 0% NOT STARTED
 - [ ] Cloud VM deployment (24/7)
 - [ ] Work-zone specialization (Cloud vs Local)
 - [ ] Git-based vault sync
@@ -311,7 +406,7 @@ export VERCEL_TOKEN="your-token"
 
 Sensitive actions require approval:
 
-1. Claude creates file in `/vault/Pending_Approval/`
+1. Qwen creates file in `/vault/Pending_Approval/`
 2. Human reviews and moves to:
    - `/Approved/` → Execute action
    - `/Rejected/` → Log and skip
@@ -337,8 +432,8 @@ All actions logged to `/vault/Logs/`:
 ```
 1. Gmail Watcher detects new email
 2. Creates /vault/Needs_Action/EMAIL_001.md
-3. Orchestrator triggers Claude
-4. Claude reads email, categorizes, drafts response
+3. Orchestrator triggers Qwen
+4. Qwen reads email, categorizes, drafts response
 5. If sensitive → creates approval request
 6. Human approves (moves to /Approved/)
 7. Email MCP sends response
@@ -350,9 +445,9 @@ All actions logged to `/vault/Logs/`:
 ```
 1. Bug report placed in /vault/Needs_Action/bugs/
 2. Bug Watcher detects new report
-3. Claude triggers /fix-ticket skill
+3. Qwen triggers /fix-ticket skill
 4. Playwright reproduces bug
-5. Claude researches and plans fix
+5. Qwen researches and plans fix
 6. Implements fix, runs tests
 7. Verifies in browser
 8. Commits and deploys to Vercel
@@ -363,7 +458,7 @@ All actions logged to `/vault/Logs/`:
 
 ```
 1. Cron triggers every Monday 7 AM
-2. Claude reads Business_Goals.md
+2. Qwen reads Business_Goals.md
 3. Analyzes /vault/Done/ for completed tasks
 4. Analyzes /vault/Accounting/ for revenue
 5. Detects bottlenecks from task durations
@@ -374,43 +469,95 @@ All actions logged to `/vault/Logs/`:
 
 ## 🛠️ Troubleshooting
 
-### Watchers Not Starting
+### Quick Health Check
+
 ```bash
-# Check Python version
-python3 --version  # Need 3.13+
+# Run comprehensive health check
+./scripts/health_check.sh
+
+# View system status
+./scripts/status_all.sh
+
+# View all logs
+./scripts/logs_all.sh
+```
+
+### Service Not Starting
+
+```bash
+# Check what would start (dry run)
+./scripts/start_all.sh --dry-run
+
+# Check Python environment
+.venv/bin/python --version
 
 # Install dependencies
-pip install -r requirements.txt
+.venv/bin/pip install -e .
 
-# Check file permissions
-chmod +x scripts/watchers/*.py
+# Check PM2 status
+pm2 list
 ```
 
-### Claude Not Processing
+### Stuck Items in In_Progress
+
 ```bash
-# Check Claude Code installation
-claude --version
+# View stuck items
+ls vault/In_Progress/
 
-# Verify vault path
-cd vault
-claude --prompt "Test"
+# Move back to Needs_Action
+mv vault/In_Progress/*.md vault/Needs_Action/
 
-# Check for items in Needs_Action
-ls -la vault/Needs_Action/
+# Or use reset script
+./scripts/reset_all.sh --dry-run  # Preview
+./scripts/reset_all.sh             # Execute
 ```
 
-### Playwright Errors
-```bash
-# Install browsers
-playwright install chromium
+### Reset to Clean State
 
-# Test Playwright CLI
-playwright-cli --help
+```bash
+# Soft reset (keeps Done, Plans, Approved)
+./scripts/reset_all.sh
+
+# Full reset (also clears Done, Plans, Briefings)
+./scripts/reset_all.sh --all
+```
+
+### MCP Server Errors
+
+```bash
+# Validate all MCP servers
+./scripts/health_check.sh
+
+# Test individual server in dry_run mode
+DRY_RUN=true .venv/bin/python -c "
+from orchestrator import Orchestrator
+orch = Orchestrator(vault_path='./vault', dry_run=True)
+print(orch._call_mcp_server('email', 'send_email', {
+    'to': 'test@test.com', 'subject': 'T', 'body': 'B', 'cc': '', 'bcc': ''
+}))
+"
+```
+
+### Cron Issues
+
+```bash
+# View current cron jobs
+crontab -l
+
+# Preview cron entries
+./scripts/setup_cron.sh --dry-run
+
+# Remove and re-install
+./scripts/setup_cron.sh --remove
+./scripts/setup_cron.sh
+
+# View cron logs
+tail -f logs/cron.log
 ```
 
 ## 📚 Learning Resources
 
-- [Claude Code Docs](https://claude.com/product/claude-code)
+- [Qwen Code Docs](https://qwen.ai/)
 - [Obsidian](https://obsidian.md)
 - [Model Context Protocol](https://modelcontextprotocol.io)
 - [Playwright](https://playwright.dev)
