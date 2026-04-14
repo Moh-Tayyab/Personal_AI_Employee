@@ -168,21 +168,45 @@ class CEOBriefingGenerator:
             'payments_received': 0,
             'source': 'logs'  # or 'odoo'
         }
-        
+
         if self.odoo_enabled:
             try:
-                # Try to get data from Odoo
-                from mcp.odoo.server import get_financial_summary
+                # Direct Odoo API call (no MCP dependency)
+                import os
+                from dotenv import load_dotenv
+                load_dotenv()
                 
-                result = get_financial_summary(period_days=7)
-                if result.get('success'):
-                    financial.update({
-                        'revenue': result.get('revenue', {}).get('total', 0),
-                        'expenses': result.get('expenses', {}).get('total', 0),
-                        'profit': result.get('profit', 0),
-                        'invoices_sent': result.get('revenue', {}).get('invoice_count', 0),
-                        'source': 'odoo'
-                    })
+                url = f"{os.getenv('ODOO_URL')}/jsonrpc"
+                db = os.getenv('ODOO_DB')
+                login = os.getenv('ODOO_USERNAME')
+                key = os.getenv('ODOO_API_KEY')
+                
+                # Authenticate
+                auth_payload = {
+                    'jsonrpc': '2.0', 'method': 'call', 'id': 1,
+                    'params': {'service': 'common', 'method': 'authenticate', 'args': [db, login, key, {}]}
+                }
+                auth_resp = requests.post(url, json=auth_payload, timeout=10).json()
+                uid = auth_resp.get('result')
+                
+                if uid:
+                    # Get invoices
+                    inv_payload = {
+                        'jsonrpc': '2.0', 'method': 'call', 'id': 2,
+                        'params': {
+                            'service': 'object', 'method': 'execute_kw',
+                            'args': [db, uid, key, 'account.move', 'search_read',
+                                     [[['move_type', '=', 'out_invoice'], ['date', '>=', (datetime.now() - timedelta(days=7)).strftime('%Y-%m-%d')]]],
+                                     {'fields': ['name', 'amount_total', 'state']}]
+                        }
+                    }
+                    invoices = requests.post(url, json=inv_payload, timeout=10).json().get('result', [])
+                    
+                    posted_invoices = [i for i in invoices if i.get('state') == 'posted']
+                    financial['revenue'] = sum(i.get('amount_total', 0) for i in posted_invoices)
+                    financial['invoices_sent'] = len(invoices)
+                    financial['source'] = 'odoo'
+                    logger.info(f"✅ Odoo data retrieved: {len(invoices)} invoices, ${financial['revenue']:.2f} revenue")
             except Exception as e:
                 logger.warning(f"Could not get Odoo data: {e}")
         
