@@ -83,6 +83,16 @@ class MultiProviderAI:
             except Exception as e:
                 logger.warning(f"Anthropic initialization failed: {e}")
 
+        # Groq (OpenAI-compatible API)
+        groq_key = os.getenv("GROQ_API_KEY")
+        if groq_key and REQUESTS_AVAILABLE:
+            self.providers["groq"] = {
+                "api_key": groq_key,
+                "base_url": os.getenv("GROQ_BASE_URL", "https://api.groq.com/openai/v1"),
+                "model": os.getenv("GROQ_MODEL", "llama-3.3-70b-versatile")
+            }
+            logger.info("✅ Groq provider initialized")
+
         if not self.providers:
             logger.warning("⚠️ No AI providers configured - all will fail")
 
@@ -118,6 +128,8 @@ class MultiProviderAI:
                 response = self._call_openrouter(prompt, task_type, thinking)
             elif provider_name == "anthropic":
                 response = self._call_anthropic(prompt, thinking)
+            elif provider_name == "groq":
+                response = self._call_groq(prompt, thinking)
             else:
                 response = ""
 
@@ -158,6 +170,8 @@ class MultiProviderAI:
                 return "anthropic"
 
         else:  # simple, general
+            if "groq" in self.providers:
+                return "groq"  # Fast, free
             if "gemini" in self.providers:
                 return "gemini"  # Free tier, fast
             if "openrouter" in self.providers:
@@ -238,16 +252,45 @@ class MultiProviderAI:
         message = client.messages.create(**kwargs)
         return message.content[0].text
 
+    def _call_groq(self, prompt: str, thinking: bool = False) -> str:
+        """Call Groq API (OpenAI-compatible, ultra-fast inference)."""
+        config = self.providers["groq"]
+
+        headers = {
+            "Authorization": f"Bearer {config['api_key']}",
+            "Content-Type": "application/json",
+        }
+
+        payload = {
+            "model": config["model"],
+            "messages": [{"role": "user", "content": prompt}],
+            "temperature": 0.3 if thinking else 0.7,
+            "max_tokens": 8192,
+        }
+
+        response = requests.post(
+            f"{config['base_url']}/chat/completions",
+            headers=headers,
+            json=payload,
+            timeout=60
+        )
+        response.raise_for_status()
+
+        data = response.json()
+        return data["choices"][0]["message"]["content"]
+
     def _try_fallback(
         self, prompt: str, task_type: str, thinking: bool, failed_provider: str
     ) -> Tuple[str, str]:
         """Try remaining providers in priority order."""
-        remaining = [p for p in ("gemini", "openrouter", "anthropic")
+        remaining = [p for p in ("groq", "gemini", "openrouter", "anthropic")
                      if p in self.providers and p != failed_provider]
 
         for provider in remaining:
             try:
-                if provider == "gemini":
+                if provider == "groq":
+                    response = self._call_groq(prompt, thinking)
+                elif provider == "gemini":
                     response = self._call_gemini(prompt, thinking)
                 elif provider == "openrouter":
                     response = self._call_openrouter(prompt, task_type, thinking)
