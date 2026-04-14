@@ -1,0 +1,10 @@
+{
+  "lead_id": "LEAD_001",
+  "stage": "Done",
+  "attempts": 0,
+  "max_attempts": 3,
+  "last_updated": "2026-04-14T11:05:05.976569",
+  "data": {
+    "score": "Hot"
+  }
+}
