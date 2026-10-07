@@ -2,6 +2,22 @@
 
 > Autonomous digital worker built with Qwen Code and an Obsidian vault. Monitors communication channels, processes tasks through AI reasoning, and executes actions via MCP servers — with human approval gates for sensitive operations.
 
+
+## 📚 Documentation map (start here)
+
+| Doc | What it answers |
+|---|---|
+| `EXECUTIVE_SUMMARY.md` | What was built + validation score (94%) |
+| `ARCHITECTURE.md` | System design, agents, MCP servers |
+| `QUICK_REFERENCE.md` | Commands + fast lookup |
+| `OPERATIONS_RUNBOOK.md` | How to run/support it |
+| `WHATSAPP_IMPLEMENTATION.md` + `WHATSAPP_IMPLEMENTATION_PHASE23.md` | WhatsApp wiring |
+| `GOLD_TIER_README.md` + `GOLD_TIER_IMPLEMENTATION.md` | Gold-tier autonomous features |
+| `IMPLEMENTATION_SUMMARY.md` | Build summary |
+| `Dashboard.md` | Dashboard guide |
+| `CHANGELOG.md` | Version history |
+| `AGENTS.md` / `CLAUDE.md` | Contributor + agent instructions |
+
 ## Current Status
 
 - **Tier:** Gold (Autonomous Employee)
